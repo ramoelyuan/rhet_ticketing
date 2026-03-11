@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import TicketTable from "../../components/TicketTable";
 import { listTickets } from "../../services/tickets";
-import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 const STATUS_GROUP_OPTIONS = [
   { value: "active", label: "Active" },
@@ -17,6 +16,9 @@ export default function AdminDashboard() {
   const [statusGroup, setStatusGroup] = useState("active");
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [page, setPage] = useState(1);
+  const notificationAudioRef = useRef(null);
+  const audioUnlockedRef = useRef(false);
+  const lastOpenTotalRef = useRef(null);
 
   const hasPrev = page > 1;
   const hasNext = page * pageSize < tickets.total;
@@ -29,15 +31,85 @@ export default function AdminDashboard() {
       const pa = weight[a.priority] || 0;
       const pb = weight[b.priority] || 0;
       if (pb !== pa) return pb - pa;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
   }, [tickets.items, statusGroup]);
+
+  useEffect(() => {
+    if (!notificationAudioRef.current) {
+      const base = (import.meta?.env?.BASE_URL || "/").replace(/\/?$/, "/");
+      const a = new Audio(`${base}soundeffect/notificationssound.mp3`);
+      a.preload = "auto";
+      a.volume = 1.0;
+      notificationAudioRef.current = a;
+    }
+
+    function unlockAudio() {
+      audioUnlockedRef.current = true;
+      const a = notificationAudioRef.current;
+      if (!a) return;
+      try {
+        const prevVol = a.volume;
+        a.volume = 0.01;
+        a.currentTime = 0;
+        const p = a.play();
+        if (p && typeof p.then === "function") {
+          p.then(() => {
+            a.pause();
+            a.currentTime = 0;
+            a.volume = prevVol;
+          }).catch(() => {
+            a.volume = prevVol;
+          });
+        } else {
+          a.pause();
+          a.currentTime = 0;
+          a.volume = prevVol;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const unlockEvents = ["pointerdown", "keydown", "touchstart"];
+    unlockEvents.forEach((ev) => window.addEventListener(ev, unlockAudio, { passive: true }));
+    return () => {
+      unlockEvents.forEach((ev) => window.removeEventListener(ev, unlockAudio, { passive: true }));
+    };
+  }, []);
 
   useEffect(() => {
     function fetchTickets() {
       if (!initialLoaded) setTicketsLoading(true);
       listTickets({ page, limit: pageSize, statusGroup })
-        .then((r) => setTickets({ items: r.items || [], total: r.total || 0 }))
+        .then((r) => {
+          const items = r.items || [];
+          const total = r.total || 0;
+          setTickets({ items, total });
+
+          // Sync notification with the moment new OPEN tickets appear in Active list.
+          if (statusGroup === "active" && page === 1 && audioUnlockedRef.current) {
+            const openCountInResponse = items.filter((t) => t.status === "OPEN").length;
+            if (lastOpenTotalRef.current == null) {
+              lastOpenTotalRef.current = openCountInResponse;
+            } else if (openCountInResponse > lastOpenTotalRef.current) {
+              const a = notificationAudioRef.current;
+              if (a) {
+                try {
+                  a.pause();
+                  a.currentTime = 0;
+                  a.volume = 1.0;
+                  a.play().catch(() => {});
+                } catch {
+                  // ignore
+                }
+              }
+              lastOpenTotalRef.current = openCountInResponse;
+            } else {
+              lastOpenTotalRef.current = openCountInResponse;
+            }
+          }
+        })
         .catch(() => {
           // Keep last data on background refresh failures.
           if (!initialLoaded) setTickets({ items: [], total: 0 });
@@ -109,26 +181,6 @@ export default function AdminDashboard() {
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Updated</span>
               <span className="text-xs font-bold tabular-nums text-gray-900 dark:text-white">{lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : "—"}</span>
             </div>
-            {hasPrev && (
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="inline-flex items-center justify-center rounded-full border border-white/50 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/60 w-9 h-9 backdrop-blur shadow-sm text-gray-900 dark:text-white hover:bg-white/80 dark:hover:bg-slate-900/80"
-                aria-label="Previous tickets"
-              >
-                <ChevronUpIcon className="w-5 h-5" />
-              </button>
-            )}
-            {hasNext && (
-              <button
-                type="button"
-                onClick={() => setPage((p) => p + 1)}
-                className="inline-flex items-center justify-center rounded-full border border-white/50 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/60 w-9 h-9 backdrop-blur shadow-sm text-gray-900 dark:text-white hover:bg-white/80 dark:hover:bg-slate-900/80"
-                aria-label="Next tickets"
-              >
-                <ChevronDownIcon className="w-5 h-5" />
-              </button>
-            )}
             <div className="hidden sm:inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600/90 via-sky-500/90 to-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
               Live
             </div>
@@ -140,15 +192,36 @@ export default function AdminDashboard() {
         ) : (
           <div className="relative rounded-2xl overflow-hidden bg-white/75 dark:bg-slate-900/70 border border-white/40 dark:border-slate-800/70 shadow-[0_22px_55px_-30px_rgba(0,0,0,0.45)] backdrop-blur">
             <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-sky-500 to-emerald-500" />
-            <div className="h-[22rem] overflow-x-auto">
+            <div className="h-[26rem] overflow-x-auto">
               <TicketTable
                 title={null}
                 rows={displayItems}
                 detailsBasePath={null}
-                compact
                 showResolvedAt={statusGroup === "resolved"}
+                disableSort
+                size="large"
               />
             </div>
+            {(hasPrev || hasNext) && (
+              <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-white/30 dark:border-slate-800/60 bg-white/40 dark:bg-slate-900/40 backdrop-blur">
+                <button
+                  type="button"
+                  disabled={!hasPrev}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="btn-secondary disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  disabled={!hasNext}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="btn-primary disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

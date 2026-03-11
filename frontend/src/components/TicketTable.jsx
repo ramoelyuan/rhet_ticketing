@@ -46,18 +46,34 @@ export default function TicketTable({
   detailsBasePath,
   compact = false,
   showResolvedAt = true,
+  disableSort = false,
+  size = "normal", // normal | large
 }) {
   const [orderBy, setOrderBy] = useState("createdAt");
   const [order, setOrder] = useState("desc");
   const showAction = detailsBasePath != null;
   const showHeader = title != null && title !== "";
   const roomy = !showAction; // read-only tables are used for big-screen stats
-  const padY = compact ? "py-2.5" : roomy ? "py-4" : "py-3";
-  const cellText = compact ? "text-sm" : roomy ? "text-base" : "text-sm";
+  const padY =
+    size === "large"
+      ? "py-5"
+      : compact
+        ? "py-2.5"
+        : roomy
+          ? "py-4"
+          : "py-3";
+  const cellText =
+    size === "large"
+      ? "text-base"
+      : compact
+        ? "text-sm"
+        : roomy
+          ? "text-base"
+          : "text-sm";
 
   const displayRows = useMemo(
-    () => sortRows(rows || [], orderBy, order),
-    [rows, orderBy, order]
+    () => (disableSort ? (rows || []) : sortRows(rows || [], orderBy, order)),
+    [rows, orderBy, order, disableSort]
   );
 
   function handleSort(column) {

@@ -66,7 +66,9 @@ export default function AppLayout({ children }) {
 
   useEffect(() => {
     if (!user) return;
-    if (user.role !== "ADMIN" && user.role !== "TECHNICIAN") return;
+    // Admin dashboard handles its own synchronized notifications.
+    if (user.role === "ADMIN") return;
+    if (user.role !== "TECHNICIAN") return;
 
     if (!notificationAudioRef.current) {
       const base = (import.meta?.env?.BASE_URL || "/").replace(/\/?$/, "/");

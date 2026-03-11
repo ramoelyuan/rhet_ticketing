@@ -169,7 +169,7 @@ async function listTickets(req, res, next) {
               WHEN 'LOW' THEN 1
               ELSE 0
             END DESC,
-            t.created_at DESC
+            t.created_at ASC
         `
         : `ORDER BY t.created_at DESC`;
     const { rows } = await pool.query(

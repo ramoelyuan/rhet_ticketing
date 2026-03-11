@@ -91,6 +91,17 @@ export default function TicketDetailsView() {
     }
   }
 
+  useEffect(() => {
+    // Keep technician status select valid (techs only choose RESOLVED / NOT_RESOLVED).
+    if (!data) return;
+    if (user?.role !== "TECHNICIAN") return;
+    const t = data.ticket;
+    const isOwnerTech = t.assignedTechnician?.id === user?.id;
+    const canTechResolve = isOwnerTech && t.status === "IN_PROGRESS";
+    if (!canTechResolve) return;
+    if (status !== "RESOLVED" && status !== "NOT_RESOLVED") setStatus("RESOLVED");
+  }, [data, user?.role, user?.id, status]);
+
   if (!data) return null;
 
   const t = data.ticket;
