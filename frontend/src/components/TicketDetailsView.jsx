@@ -98,6 +98,9 @@ export default function TicketDetailsView() {
   const canStaff = user?.role === "TECHNICIAN" || user?.role === "ADMIN";
   const canAssign = user?.role === "ADMIN";
   const canTake = canStaff && t.status === "OPEN" && !t.assignedTechnician?.id;
+  const isTech = user?.role === "TECHNICIAN";
+  const isOwnerTech = isTech && t.assignedTechnician?.id === user?.id;
+  const canTechResolve = isOwnerTech && t.status === "IN_PROGRESS";
 
   return (
     <div className="space-y-4">
@@ -217,15 +220,36 @@ export default function TicketDetailsView() {
                 <p className="text-sm text-gray-500 dark:text-gray-400">This ticket is closed and cannot be edited.</p>
               ) : (
                 <>
-                  <select value={status} onChange={(e) => setStatus(e.target.value)} className="input-field mb-3">
-                    <option value="OPEN">Open</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="RESOLVED">Resolved</option>
-                    <option value="NOT_RESOLVED">Not Resolved</option>
-                  </select>
-                  <button type="button" onClick={submitStatus} className="btn-primary w-full">
-                    Save Status
-                  </button>
+                  {isTech && !isOwnerTech ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Only the IT Support who took this ticket can resolve it.
+                    </p>
+                  ) : isTech && !canTechResolve ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Take the ticket first. You can resolve it after it is in progress.
+                    </p>
+                  ) : (
+                    <>
+                      <select value={status} onChange={(e) => setStatus(e.target.value)} className="input-field mb-3">
+                        {user?.role === "ADMIN" ? (
+                          <>
+                            <option value="OPEN">Open</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="RESOLVED">Resolved</option>
+                            <option value="NOT_RESOLVED">Not Resolved</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="RESOLVED">Resolved</option>
+                            <option value="NOT_RESOLVED">Not Resolved</option>
+                          </>
+                        )}
+                      </select>
+                      <button type="button" onClick={submitStatus} className="btn-primary w-full">
+                        Save Status
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </div>

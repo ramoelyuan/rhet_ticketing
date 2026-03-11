@@ -5,10 +5,18 @@ const { addActivityLog } = require("../services/activityLog");
 const { ACTIVE_STATUSES } = require("../services/assignment");
 
 const createTicketSchema = z.object({
-  subject: z.string().min(3),
-  description: z.string().min(5),
-  categoryId: z.string().uuid().optional().nullable(),
-  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("LOW"),
+  subject: z.string().trim().min(3),
+  description: z.string().trim().min(5),
+  categoryId: z
+    .preprocess((v) => (v === "" ? null : v), z.string().uuid().nullable())
+    .optional()
+    .nullable(),
+  priority: z
+    .preprocess(
+      (v) => (typeof v === "string" ? v.trim().toUpperCase() : v),
+      z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"])
+    )
+    .default("LOW"),
 });
 
 function buildTicketWhere({ user, q, status, statusGroup, priority, categoryId, technicianId, from, to }) {
@@ -401,6 +409,17 @@ async function updateStatus(req, res, next) {
     if (isFinal)
       return res.status(400).json({ error: "Ticket is already closed and cannot be modified." });
 
+    if (req.user.role === "TECHNICIAN") {
+      if (!ticket.assigned_technician_id)
+        return res.status(400).json({ error: "Take the ticket before changing its status." });
+      if (ticket.assigned_technician_id !== req.user.id)
+        return res.status(403).json({ error: "Only the assigned IT Support can change the status." });
+      if (ticket.status !== "IN_PROGRESS")
+        return res.status(400).json({ error: "Ticket must be in progress before it can be resolved." });
+      if (status !== "RESOLVED" && status !== "NOT_RESOLVED")
+        return res.status(400).json({ error: "IT Support can only set status to Resolved or Not Resolved." });
+    }
+
     const resolvedAt = status === "RESOLVED" ? new Date() : null;
 
     await pool.query(
@@ -483,17 +502,26 @@ async function takeTicket(req, res, next) {
   const client = await pool.connect();
   try {
     const ticketId = req.params.id;
-    const { rows } = await client.query(
-      "SELECT id, status, assigned_technician_id FROM tickets WHERE id=$1",
-      [ticketId]
-    );
-    const ticket = rows[0];
-    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
-    if (ticket.status !== "OPEN")
-      return res.status(400).json({ error: "Only open tickets can be taken." });
     const technicianId = req.user.id;
 
     await client.query("BEGIN");
+    const { rows } = await client.query(
+      "SELECT id, status, assigned_technician_id FROM tickets WHERE id=$1 FOR UPDATE",
+      [ticketId]
+    );
+    const ticket = rows[0];
+    if (!ticket) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+    if (ticket.status !== "OPEN") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Only open tickets can be taken." });
+    }
+    if (ticket.assigned_technician_id) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Ticket is already taken." });
+    }
 
     await client.query(
       "UPDATE tickets SET assigned_technician_id=$1, status='IN_PROGRESS', updated_at=now() WHERE id=$2",

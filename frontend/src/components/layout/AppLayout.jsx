@@ -22,7 +22,8 @@ export default function AppLayout({ children }) {
   const [ticketsDot, setTicketsDot] = useState(false);
   const [uiHidden, setUiHidden] = useState(false);
   const idleTimer = useRef(null);
-  const audioCtxRef = useRef(null);
+  const notificationAudioRef = useRef(null);
+  const audioUnlockedRef = useRef(false);
   const lastOpenTotalRef = useRef(null);
 
   useEffect(() => {
@@ -66,41 +67,64 @@ export default function AppLayout({ children }) {
     if (!user) return;
     if (user.role !== "ADMIN" && user.role !== "TECHNICIAN") return;
 
-    function ensureAudioReady() {
-      if (audioCtxRef.current) return;
-      try {
-        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      } catch {
-        audioCtxRef.current = null;
-      }
+    if (!notificationAudioRef.current) {
+      const a = new Audio("/soundeffect/notificationssound.mp3");
+      a.preload = "auto";
+      a.volume = 1.0;
+      notificationAudioRef.current = a;
     }
 
     function unlockAudio() {
-      ensureAudioReady();
-      const ctx = audioCtxRef.current;
-      if (!ctx) return;
-      if (ctx.state === "suspended") ctx.resume().catch(() => {});
+      audioUnlockedRef.current = true;
+      const a = notificationAudioRef.current;
+      if (!a) return;
+      // Some browsers only "unlock" audio if play() is called during a user gesture.
+      // Do a near-silent play+pause to unlock future notification plays.
+      try {
+        const prevVol = a.volume;
+        a.volume = 0.01;
+        a.currentTime = 0;
+        const p = a.play();
+        if (p && typeof p.then === "function") {
+          p.then(() => {
+            a.pause();
+            a.currentTime = 0;
+            a.volume = prevVol;
+          }).catch(() => {
+            a.volume = prevVol;
+          });
+        } else {
+          a.pause();
+          a.currentTime = 0;
+          a.volume = prevVol;
+        }
+      } catch {
+        // ignore
+      }
     }
 
-    function beep({ times = 3, volume = 0.85 } = {}) {
-      const ctx = audioCtxRef.current;
-      if (!ctx) return;
-      if (ctx.state === "suspended") return;
-
-      const now = ctx.currentTime;
-      for (let i = 0; i < times; i += 1) {
-        const t0 = now + i * 0.22;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "square";
-        osc.frequency.setValueAtTime(880, t0);
-        gain.gain.setValueAtTime(0.0001, t0);
-        gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t0);
-        osc.stop(t0 + 0.18);
+    async function playNotification() {
+      const a = notificationAudioRef.current;
+      if (!a) return;
+      if (!audioUnlockedRef.current) return;
+      try {
+        a.pause();
+        a.currentTime = 0;
+        a.volume = 1.0;
+        await a.play();
+        // Replay quickly to make it more noticeable.
+        setTimeout(() => {
+          try {
+            a.pause();
+            a.currentTime = 0;
+            a.volume = 1.0;
+            a.play().catch(() => {});
+          } catch {
+            // ignore
+          }
+        }, 250);
+      } catch {
+        // ignore autoplay/permission errors
       }
     }
 
@@ -118,7 +142,7 @@ export default function AppLayout({ children }) {
           return;
         }
         if (total > lastOpenTotalRef.current) {
-          beep({ times: 3, volume: 0.9 });
+          playNotification();
         }
         lastOpenTotalRef.current = total;
       } catch {

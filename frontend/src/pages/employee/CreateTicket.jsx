@@ -23,8 +23,8 @@ export default function CreateTicketPage() {
     setMsg(null);
     try {
       const res = await createTicket({
-        subject,
-        description,
+        subject: subject.trim(),
+        description: description.trim(),
         priority,
         categoryId: categoryId || null,
       });
