@@ -131,8 +131,8 @@ export default function AppLayout({ children }) {
         hidden={uiHidden}
       />
       <div
-        className={`min-h-screen flex flex-col transition-[margin-left] duration-150 ease-out ${
-          collapsed ? "md:ml-20" : "md:ml-[16.25rem]"
+        className={`min-h-screen flex flex-col transition-[margin-left] duration-300 ease-in-out ${
+          uiHidden ? "md:ml-0" : collapsed ? "md:ml-20" : "md:ml-[16.25rem]"
         }`}
       >
         <div

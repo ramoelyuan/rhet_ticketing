@@ -73,9 +73,6 @@ export default function Login() {
             <button type="submit" disabled={busy} className="btn-primary w-full py-2.5">
               {busy ? "Signing in..." : "Sign In"}
             </button>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Seed: employee@company.com, tech1@company.com, admin@company.com (Password123!)
-            </p>
           </form>
         </div>
       </div>
