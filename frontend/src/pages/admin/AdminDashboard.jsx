@@ -51,7 +51,8 @@ export default function AdminDashboard() {
         });
     }
     fetchTickets();
-    const interval = setInterval(fetchTickets, 30 * 1000);
+    const intervalMs = statusGroup === "active" ? 5 * 1000 : 30 * 1000;
+    const interval = setInterval(fetchTickets, intervalMs);
     return () => clearInterval(interval);
   }, [statusGroup, initialLoaded, page]);
 
