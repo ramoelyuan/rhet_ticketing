@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import TicketTable from "../../components/TicketTable";
 import { listTickets } from "../../services/tickets";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 const STATUS_GROUP_OPTIONS = [
   { value: "active", label: "Active" },
@@ -9,16 +10,33 @@ const STATUS_GROUP_OPTIONS = [
 ];
 
 export default function AdminDashboard() {
+  const pageSize = 5;
   const [tickets, setTickets] = useState({ items: [], total: 0 });
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const [statusGroup, setStatusGroup] = useState("active");
   const [initialLoaded, setInitialLoaded] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const hasPrev = page > 1;
+  const hasNext = page * pageSize < tickets.total;
+
+  const displayItems = useMemo(() => {
+    if (statusGroup !== "active") return tickets.items;
+    // Backend already sorts active by priority, but keep a stable client sort too.
+    const weight = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+    return [...(tickets.items || [])].sort((a, b) => {
+      const pa = weight[a.priority] || 0;
+      const pb = weight[b.priority] || 0;
+      if (pb !== pa) return pb - pa;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [tickets.items, statusGroup]);
 
   useEffect(() => {
     function fetchTickets() {
       if (!initialLoaded) setTicketsLoading(true);
-      listTickets({ page: 1, limit: 10, statusGroup })
+      listTickets({ page, limit: pageSize, statusGroup })
         .then((r) => setTickets({ items: r.items || [], total: r.total || 0 }))
         .catch(() => {
           // Keep last data on background refresh failures.
@@ -35,7 +53,11 @@ export default function AdminDashboard() {
     fetchTickets();
     const interval = setInterval(fetchTickets, 30 * 1000);
     return () => clearInterval(interval);
-  }, [statusGroup, initialLoaded]);
+  }, [statusGroup, initialLoaded, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusGroup]);
 
   return (
     <div className="relative min-h-full">
@@ -86,6 +108,26 @@ export default function AdminDashboard() {
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Updated</span>
               <span className="text-xs font-bold tabular-nums text-gray-900 dark:text-white">{lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : "—"}</span>
             </div>
+            {hasPrev && (
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="inline-flex items-center justify-center rounded-full border border-white/50 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/60 w-9 h-9 backdrop-blur shadow-sm text-gray-900 dark:text-white hover:bg-white/80 dark:hover:bg-slate-900/80"
+                aria-label="Previous tickets"
+              >
+                <ChevronUpIcon className="w-5 h-5" />
+              </button>
+            )}
+            {hasNext && (
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                className="inline-flex items-center justify-center rounded-full border border-white/50 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/60 w-9 h-9 backdrop-blur shadow-sm text-gray-900 dark:text-white hover:bg-white/80 dark:hover:bg-slate-900/80"
+                aria-label="Next tickets"
+              >
+                <ChevronDownIcon className="w-5 h-5" />
+              </button>
+            )}
             <div className="hidden sm:inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600/90 via-sky-500/90 to-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
               Live
             </div>
@@ -97,8 +139,14 @@ export default function AdminDashboard() {
         ) : (
           <div className="relative rounded-2xl overflow-hidden bg-white/75 dark:bg-slate-900/70 border border-white/40 dark:border-slate-800/70 shadow-[0_22px_55px_-30px_rgba(0,0,0,0.45)] backdrop-blur">
             <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-sky-500 to-emerald-500" />
-            <div className="h-[32rem] overflow-y-auto overflow-x-auto">
-              <TicketTable title={null} rows={tickets.items} detailsBasePath={null} />
+            <div className="h-[22rem] overflow-x-auto">
+              <TicketTable
+                title={null}
+                rows={displayItems}
+                detailsBasePath={null}
+                compact
+                showResolvedAt={statusGroup === "resolved"}
+              />
             </div>
           </div>
         )}

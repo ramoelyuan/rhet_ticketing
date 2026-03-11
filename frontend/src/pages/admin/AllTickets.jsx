@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import TicketTable from "../../components/TicketTable";
 import { listTickets } from "../../services/tickets";
@@ -11,6 +11,7 @@ export default function AllTickets() {
   const [data, setData] = useState({ items: [], total: 0, limit: 10 });
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
+  const debounceRef = useRef(null);
 
   async function load(nextPage = page) {
     setLoading(true);
@@ -34,15 +35,21 @@ export default function AllTickets() {
     load(1).then(() => setPage(1)).catch(() => {});
   }, []);
 
-  function applyFilters() {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (q) next.set("q", q);
-      else next.delete("q");
-      return next;
-    });
-    load(1).then(() => setPage(1));
-  }
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (q) next.set("q", q);
+        else next.delete("q");
+        return next;
+      });
+      load(1).then(() => setPage(1));
+    }, 350);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [q, status, priority]);
 
   return (
     <div className="space-y-4">
@@ -82,11 +89,6 @@ export default function AllTickets() {
             <option value="HIGH">High</option>
             <option value="URGENT">Urgent</option>
           </select>
-        </div>
-        <div className="md:col-span-2">
-          <button type="button" onClick={applyFilters} className="btn-primary w-full">
-            Apply
-          </button>
         </div>
       </div>
       {loading ? (

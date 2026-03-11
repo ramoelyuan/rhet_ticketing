@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TicketTable from "../../components/TicketTable";
 import { listTickets } from "../../services/tickets";
 
@@ -8,6 +8,7 @@ export default function MyTickets() {
   const [priority, setPriority] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ items: [], total: 0, limit: 10 });
+  const debounceRef = useRef(null);
 
   async function load(nextPage = page) {
     const res = await listTickets({
@@ -23,6 +24,16 @@ export default function MyTickets() {
   useEffect(() => {
     load(1).then(() => setPage(1)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      load(1).then(() => setPage(1)).catch(() => {});
+    }, 350);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [q, status, priority]);
 
   return (
     <div className="space-y-4">
@@ -54,11 +65,6 @@ export default function MyTickets() {
             <option value="HIGH">High</option>
             <option value="URGENT">Urgent</option>
           </select>
-        </div>
-        <div className="md:col-span-2">
-          <button type="button" onClick={() => load(1).then(() => setPage(1))} className="btn-primary w-full">
-            Apply
-          </button>
         </div>
       </div>
       <TicketTable title="Tickets" rows={data.items} detailsBasePath="/employee/tickets" />

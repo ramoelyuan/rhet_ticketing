@@ -22,6 +22,8 @@ export default function AppLayout({ children }) {
   const [ticketsDot, setTicketsDot] = useState(false);
   const [uiHidden, setUiHidden] = useState(false);
   const idleTimer = useRef(null);
+  const audioCtxRef = useRef(null);
+  const lastOpenTotalRef = useRef(null);
 
   useEffect(() => {
     function clearTimer() {
@@ -59,6 +61,79 @@ export default function AppLayout({ children }) {
       window.removeEventListener("touchstart", onActivity, opts);
     };
   }, [uiHidden]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role !== "ADMIN" && user.role !== "TECHNICIAN") return;
+
+    function ensureAudioReady() {
+      if (audioCtxRef.current) return;
+      try {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      } catch {
+        audioCtxRef.current = null;
+      }
+    }
+
+    function unlockAudio() {
+      ensureAudioReady();
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+      if (ctx.state === "suspended") ctx.resume().catch(() => {});
+    }
+
+    function beep({ times = 3, volume = 0.85 } = {}) {
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+      if (ctx.state === "suspended") return;
+
+      const now = ctx.currentTime;
+      for (let i = 0; i < times; i += 1) {
+        const t0 = now + i * 0.22;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(880, t0);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.18);
+      }
+    }
+
+    const unlockEvents = ["pointerdown", "keydown", "touchstart"];
+    unlockEvents.forEach((ev) => window.addEventListener(ev, unlockAudio, { passive: true }));
+
+    let cancelled = false;
+    async function poll() {
+      try {
+        const r = await listTickets({ limit: 1, status: "OPEN" });
+        if (cancelled) return;
+        const total = r?.total ?? 0;
+        if (lastOpenTotalRef.current == null) {
+          lastOpenTotalRef.current = total;
+          return;
+        }
+        if (total > lastOpenTotalRef.current) {
+          beep({ times: 3, volume: 0.9 });
+        }
+        lastOpenTotalRef.current = total;
+      } catch {
+        // ignore
+      }
+    }
+
+    poll();
+    const interval = setInterval(poll, 10 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      unlockEvents.forEach((ev) => window.removeEventListener(ev, unlockAudio, { passive: true }));
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -136,11 +211,13 @@ export default function AppLayout({ children }) {
         }`}
       >
         <div
-          className={`transition-all duration-200 ${uiHidden ? "opacity-0 -translate-y-4 pointer-events-none" : "opacity-100 translate-y-0"}`}
+          className={`relative z-50 transition-all duration-200 ${
+            uiHidden ? "opacity-0 -translate-y-4 pointer-events-none" : "opacity-100 translate-y-0"
+          }`}
         >
           <Topbar onMenu={() => setMobileOpen(true)} />
         </div>
-        <main className="flex-1 px-4 md:px-6 py-6 md:py-8 max-w-7xl w-full mx-auto">
+        <main className="relative z-0 flex-1 px-4 md:px-6 py-6 md:py-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>

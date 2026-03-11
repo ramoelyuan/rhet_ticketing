@@ -150,6 +150,20 @@ async function listTickets(req, res, next) {
     const total = countResult.rows[0].total;
 
     const dataParams = [...params, limit, offset];
+    const orderSql =
+      statusGroup === "active"
+        ? `
+          ORDER BY
+            CASE t.priority
+              WHEN 'URGENT' THEN 4
+              WHEN 'HIGH' THEN 3
+              WHEN 'MEDIUM' THEN 2
+              WHEN 'LOW' THEN 1
+              ELSE 0
+            END DESC,
+            t.created_at DESC
+        `
+        : `ORDER BY t.created_at DESC`;
     const { rows } = await pool.query(
       `
       SELECT
@@ -163,7 +177,7 @@ async function listTickets(req, res, next) {
       JOIN users u ON u.id = t.created_by
       LEFT JOIN users tech ON tech.id = t.assigned_technician_id
       ${whereSql}
-      ORDER BY t.created_at DESC
+      ${orderSql}
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
       `,
       dataParams

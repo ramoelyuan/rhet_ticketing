@@ -83,7 +83,7 @@ export default function Topbar({ onMenu }) {
   }
 
   return (
-    <header className="sticky top-0 z-20 flex items-center h-16 px-4 gap-3 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
+    <header className="sticky top-0 z-50 flex items-center h-16 px-4 gap-3 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
       <button
         type="button"
         onClick={onMenu}
@@ -139,8 +139,8 @@ export default function Topbar({ onMenu }) {
             </button>
             {profileOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} aria-hidden />
-                <div className="absolute right-0 top-full mt-1 z-20 w-56 rounded-lg bg-white dark:bg-slate-800 shadow-lg border border-gray-200 dark:border-slate-700 py-1">
+                <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} aria-hidden />
+                <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg bg-white dark:bg-slate-800 shadow-lg border border-gray-200 dark:border-slate-700 py-1">
                   <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 truncate border-b border-gray-100 dark:border-slate-700">
                     {user.email}
                   </div>
