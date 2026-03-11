@@ -24,6 +24,7 @@ export default function AppLayout({ children }) {
   const idleTimer = useRef(null);
   const notificationAudioRef = useRef(null);
   const audioUnlockedRef = useRef(false);
+  const audioCtxRef = useRef(null);
   const lastOpenTotalRef = useRef(null);
 
   useEffect(() => {
@@ -68,16 +69,50 @@ export default function AppLayout({ children }) {
     if (user.role !== "ADMIN" && user.role !== "TECHNICIAN") return;
 
     if (!notificationAudioRef.current) {
-      const a = new Audio("/soundeffect/notificationssound.mp3");
+      const base = (import.meta?.env?.BASE_URL || "/").replace(/\/?$/, "/");
+      const a = new Audio(`${base}soundeffect/notificationssound.mp3`);
       a.preload = "auto";
       a.volume = 1.0;
       notificationAudioRef.current = a;
+    }
+
+    function ensureAudioCtx() {
+      if (audioCtxRef.current) return audioCtxRef.current;
+      try {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      } catch {
+        audioCtxRef.current = null;
+      }
+      return audioCtxRef.current;
+    }
+
+    function fallbackBeep(times = 3) {
+      const ctx = ensureAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === "suspended") return;
+      const now = ctx.currentTime;
+      for (let i = 0; i < times; i += 1) {
+        const t0 = now + i * 0.22;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(880, t0);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.95, t0 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.18);
+      }
     }
 
     function unlockAudio() {
       audioUnlockedRef.current = true;
       const a = notificationAudioRef.current;
       if (!a) return;
+      const ctx = ensureAudioCtx();
+      if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
       // Some browsers only "unlock" audio if play() is called during a user gesture.
       // Do a near-silent play+pause to unlock future notification plays.
       try {
@@ -124,7 +159,7 @@ export default function AppLayout({ children }) {
           }
         }, 250);
       } catch {
-        // ignore autoplay/permission errors
+        fallbackBeep(3);
       }
     }
 
