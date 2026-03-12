@@ -13,9 +13,40 @@ function StatCard({ label, value }) {
 
 export default function EmployeeDashboard() {
   const [data, setData] = useState({ items: [], total: 0 });
+  const [totals, setTotals] = useState({ all: 0, OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, NOT_RESOLVED: 0 });
 
   useEffect(() => {
-    listTickets({ page: 1, limit: 10 }).then(setData).catch(() => setData({ items: [], total: 0 }));
+    let cancelled = false;
+    async function load() {
+      try {
+        const [recent, all, open, inProgress, resolved, notResolved] = await Promise.all([
+          listTickets({ page: 1, limit: 10 }),
+          listTickets({ page: 1, limit: 1 }),
+          listTickets({ page: 1, limit: 1, status: "OPEN" }),
+          listTickets({ page: 1, limit: 1, status: "IN_PROGRESS" }),
+          listTickets({ page: 1, limit: 1, status: "RESOLVED" }),
+          listTickets({ page: 1, limit: 1, status: "NOT_RESOLVED" }),
+        ]);
+        if (cancelled) return;
+        setData(recent);
+        setTotals({
+          all: all?.total || 0,
+          OPEN: open?.total || 0,
+          IN_PROGRESS: inProgress?.total || 0,
+          RESOLVED: resolved?.total || 0,
+          NOT_RESOLVED: notResolved?.total || 0,
+        });
+      } catch {
+        if (!cancelled) {
+          setData({ items: [], total: 0 });
+          setTotals({ all: 0, OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, NOT_RESOLVED: 0 });
+        }
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const stats = useMemo(() => {
@@ -33,11 +64,11 @@ export default function EmployeeDashboard() {
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard label="My Tickets (recent)" value={data.total} />
-        <StatCard label="Open" value={stats.OPEN} />
-        <StatCard label="In Progress" value={stats.IN_PROGRESS} />
-        <StatCard label="Resolved" value={stats.RESOLVED} />
-        <StatCard label="Not Resolved" value={stats.NOT_RESOLVED} />
+        <StatCard label="My Tickets" value={totals.all} />
+        <StatCard label="Open" value={totals.OPEN} />
+        <StatCard label="In Progress" value={totals.IN_PROGRESS} />
+        <StatCard label="Resolved" value={totals.RESOLVED} />
+        <StatCard label="Not Resolved" value={totals.NOT_RESOLVED} />
       </div>
       <TicketTable title="Recent Tickets" rows={data.items} detailsBasePath="/employee/tickets" />
     </div>
