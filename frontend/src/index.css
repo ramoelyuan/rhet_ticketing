@@ -47,6 +47,18 @@
   html:not(.dark) h2 {
     color: var(--color-light-heading);
   }
+  /* Hide vertical scrollbar in fullscreen (F11) */
+  @media (display-mode: fullscreen) {
+    html,
+    body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+    }
+  }
 }
 
 @layer components {
@@ -107,6 +119,12 @@
     background: rgb(15 23 42);
     border-color: rgb(30 41 59);
     box-shadow: var(--shadow-card-dark);
+  }
+  .card.translucent {
+    background: rgb(255 255 255 / 0.6);
+  }
+  .dark .card.translucent {
+    background: rgb(15 23 42 / 0.6);
   }
 
   .stats-screen-bg {

@@ -48,6 +48,7 @@ export default function TicketTable({
   showResolvedAt = true,
   disableSort = false,
   size = "normal", // normal | large
+  translucent = false,
 }) {
   const [orderBy, setOrderBy] = useState("createdAt");
   const [order, setOrder] = useState("desc");
@@ -85,7 +86,7 @@ export default function TicketTable({
   }
 
   return (
-    <div className="card">
+    <div className={`card${translucent ? " translucent" : ""}`}>
       {showHeader && (
         <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
@@ -94,7 +95,7 @@ export default function TicketTable({
       )}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-          <thead className="bg-white/70 dark:bg-slate-900/55 sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+          <thead className={`sticky top-0 z-10 backdrop-blur ${translucent ? "bg-white/60 dark:bg-slate-900/60" : "bg-white/70 dark:bg-slate-900/55 supports-[backdrop-filter]:bg-white/60"}`}>
             <tr>
               <th className={`px-4 ${padY} text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap`}>
                 <SortHeader column="ticketNumber" currentOrderBy={orderBy} currentOrder={order} onSort={handleSort}>

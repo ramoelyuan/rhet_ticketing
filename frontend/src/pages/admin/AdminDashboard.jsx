@@ -189,7 +189,7 @@ export default function AdminDashboard() {
         {ticketsLoading ? (
           <div className="rounded-2xl h-[32rem] animate-pulse bg-white/60 dark:bg-slate-900/60 border border-white/40 dark:border-slate-800/70 shadow-[0_18px_45px_-25px_rgba(0,0,0,0.35)] backdrop-blur" />
         ) : (
-          <div className="relative rounded-2xl overflow-hidden bg-white/75 dark:bg-slate-900/70 border border-white/40 dark:border-slate-800/70 shadow-[0_22px_55px_-30px_rgba(0,0,0,0.45)] backdrop-blur">
+          <div className="relative rounded-2xl overflow-hidden bg-white/60 dark:bg-slate-900/60 border border-white/40 dark:border-slate-800/70 shadow-[0_22px_55px_-30px_rgba(0,0,0,0.45)] backdrop-blur">
             <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-sky-500 to-emerald-500" />
             <div className="overflow-x-auto">
               <TicketTable
@@ -199,6 +199,7 @@ export default function AdminDashboard() {
                 showResolvedAt={statusGroup === "resolved"}
                 disableSort
                 size="large"
+                translucent
               />
             </div>
             {(hasPrev || hasNext) && (
