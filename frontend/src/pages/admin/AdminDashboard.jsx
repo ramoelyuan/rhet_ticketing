@@ -94,10 +94,10 @@ export default function AdminDashboard() {
           p.then(() => {
             a.pause();
             a.currentTime = 0;
-          }).catch(fallbackBeep);
+          }).catch(() => {});
         }
       } catch {
-        fallbackBeep();
+        // no sound on unlock
       }
     }
 
@@ -249,26 +249,28 @@ export default function AdminDashboard() {
         {ticketsLoading ? (
           <div className="rounded-2xl h-[32rem] animate-pulse bg-white/60 dark:bg-slate-900/60 border border-white/40 dark:border-slate-800/70 shadow-[0_18px_45px_-25px_rgba(0,0,0,0.35)] backdrop-blur" />
         ) : (
-          <div className="relative rounded-2xl overflow-hidden bg-white/60 dark:bg-slate-900/60 border border-white/40 dark:border-slate-800/70 shadow-[0_22px_55px_-30px_rgba(0,0,0,0.45)] backdrop-blur">
-            <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-sky-500 to-emerald-500" />
-            <div className="overflow-x-auto">
-              <TicketTable
-                title={null}
-                rows={displayItems}
-                detailsBasePath={null}
-                showResolvedAt={statusGroup === "resolved"}
-                disableSort
-                size="large"
-                translucent
-              />
+          <>
+            <div className="relative rounded-2xl overflow-hidden bg-white/60 dark:bg-slate-900/60 border border-white/40 dark:border-slate-800/70 shadow-[0_22px_55px_-30px_rgba(0,0,0,0.45)] backdrop-blur">
+              <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-sky-500 to-emerald-500" />
+              <div className="overflow-x-auto">
+                <TicketTable
+                  title={null}
+                  rows={displayItems}
+                  detailsBasePath={null}
+                  showResolvedAt={statusGroup === "resolved"}
+                  disableSort
+                  size="large"
+                  translucent
+                />
+              </div>
             </div>
             {(hasPrev || hasNext) && (
-              <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-white/30 dark:border-slate-800/60 bg-white/40 dark:bg-slate-900/40 backdrop-blur">
+              <div className="flex justify-end gap-2 -mt-2 relative z-10">
                 <button
                   type="button"
                   disabled={!hasPrev}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="btn-secondary disabled:opacity-50"
+                  className="btn-secondary disabled:opacity-50 py-2 px-4"
                 >
                   Prev
                 </button>
@@ -276,13 +278,13 @@ export default function AdminDashboard() {
                   type="button"
                   disabled={!hasNext}
                   onClick={() => setPage((p) => p + 1)}
-                  className="btn-primary disabled:opacity-50"
+                  className="btn-primary disabled:opacity-50 py-2 px-4"
                 >
                   Next
                 </button>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
