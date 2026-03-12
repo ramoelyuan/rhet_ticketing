@@ -153,7 +153,7 @@ export default function AdminDashboard() {
       <div className="pointer-events-none fixed inset-0 -z-10 stats-screen-bg" />
       <div className="pointer-events-none fixed inset-0 -z-10 stats-screen-grid opacity-60 dark:opacity-35" />
 
-      <div className="space-y-3">
+      <div className="space-y-3 uppercase">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="rounded-xl border border-white/50 dark:border-white/40 bg-white/55 dark:bg-white/25 px-4 py-2.5 backdrop-blur-md shadow-lg">
             <h1 className="text-lg md:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
               <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Updated</span>
               <span className="text-xs font-bold tabular-nums text-gray-900 dark:text-white">{lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : "—"}</span>
             </div>
-            <div className="hidden sm:inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600/90 via-sky-500/90 to-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+            <div className="hidden sm:inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
               Live
             </div>
             <span className="text-xs text-gray-600 dark:text-gray-300">

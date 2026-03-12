@@ -83,7 +83,7 @@ export default function Topbar({ onMenu }) {
   }
 
   return (
-    <header className="sticky top-0 z-50 flex items-center h-16 px-4 gap-3 bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-b border-indigo-200/70 dark:border-slate-800 shadow-sm shadow-indigo-950/5">
+    <header className="sticky top-0 z-50 flex items-center h-16 px-4 gap-3 bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-b border-indigo-200/70 dark:border-slate-800 shadow-sm shadow-indigo-950/5 dark:shadow-none">
       <button
         type="button"
         onClick={onMenu}

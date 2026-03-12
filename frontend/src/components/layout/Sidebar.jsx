@@ -19,7 +19,7 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
   }
 
   const sidebarContent = (showExpanded) => (
-    <div className="h-full flex flex-col bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-r border-indigo-200/70 dark:border-slate-800 shadow-sm shadow-indigo-950/5">
+    <div className="h-full flex flex-col bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-r border-indigo-200/70 dark:border-slate-800 shadow-sm shadow-indigo-950/5 dark:shadow-none">
       <div className="p-4 min-h-[4.5rem] flex flex-col justify-center">
         <span className="font-bold text-lg tracking-tight text-[#1e3a5f] dark:text-white truncate">
           {showExpanded ? "Rhet Ticketing" : "RT"}
