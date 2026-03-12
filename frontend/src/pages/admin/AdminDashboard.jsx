@@ -139,7 +139,7 @@ export default function AdminDashboard() {
         loop
         playsInline
         className="pointer-events-none fixed inset-0 -z-10 h-full w-full object-cover dark:hidden"
-        src="/idle/adminidlelight.mp4"
+        src="/idle/LCAVID.mp4"
       />
       <video
         autoPlay
@@ -183,9 +183,6 @@ export default function AdminDashboard() {
             <div className="hidden sm:inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
               Live
             </div>
-            <span className="text-xs text-gray-600 dark:text-gray-300">
-              {statusGroup === "active" ? "Refreshes every 5s" : "Refreshes every 30s"}
-            </span>
           </div>
         </div>
 
