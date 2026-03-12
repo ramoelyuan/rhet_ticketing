@@ -194,7 +194,7 @@ export default function AdminDashboard() {
         ) : (
           <div className="relative rounded-2xl overflow-hidden bg-white/75 dark:bg-slate-900/70 border border-white/40 dark:border-slate-800/70 shadow-[0_22px_55px_-30px_rgba(0,0,0,0.45)] backdrop-blur">
             <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-sky-500 to-emerald-500" />
-            <div className="h-[26rem] overflow-x-auto">
+            <div className="overflow-x-auto">
               <TicketTable
                 title={null}
                 rows={displayItems}

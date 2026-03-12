@@ -19,12 +19,22 @@ export default function CreateTicketPage() {
 
   async function onSubmit(e) {
     e.preventDefault();
+    const subjectTrimmed = subject.trim();
+    const descriptionTrimmed = description.trim();
+    if (subjectTrimmed.length < 3) {
+      setMsg({ type: "error", text: "Subject must be at least 3 characters." });
+      return;
+    }
+    if (descriptionTrimmed.length < 5) {
+      setMsg({ type: "error", text: "Description must be at least 5 characters." });
+      return;
+    }
     setBusy(true);
     setMsg(null);
     try {
       const res = await createTicket({
-        subject: subject.trim(),
-        description: description.trim(),
+        subject: subjectTrimmed,
+        description: descriptionTrimmed,
         priority,
         categoryId: categoryId || null,
       });
@@ -34,7 +44,24 @@ export default function CreateTicketPage() {
       setPriority("LOW");
       setCategoryId("");
     } catch (err) {
-      setMsg({ type: "error", text: err?.response?.data?.error || "Failed to create ticket" });
+      const apiError = err?.response?.data;
+      const details = Array.isArray(apiError?.details) ? apiError.details : null;
+      const first = details?.[0];
+      const field = first?.path?.[0];
+      const detailText =
+        first?.message && typeof first.message === "string"
+          ? first.message
+          : null;
+      const friendly =
+        field === "subject"
+          ? "Subject must be at least 3 characters."
+          : field === "description"
+            ? "Description must be at least 5 characters."
+            : null;
+      setMsg({
+        type: "error",
+        text: friendly || detailText || apiError?.error || "Failed to create ticket",
+      });
     } finally {
       setBusy(false);
     }
@@ -67,6 +94,7 @@ export default function CreateTicketPage() {
               onChange={(e) => setSubject(e.target.value)}
               className="input-field"
               autoComplete="off"
+              minLength={3}
               required
             />
           </div>
@@ -81,6 +109,7 @@ export default function CreateTicketPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={5}
               className="input-field"
+              minLength={5}
               required
             />
           </div>
