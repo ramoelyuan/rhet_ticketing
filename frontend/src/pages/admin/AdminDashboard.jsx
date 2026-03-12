@@ -16,9 +16,11 @@ export default function AdminDashboard() {
   const [statusGroup, setStatusGroup] = useState("active");
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [page, setPage] = useState(1);
-  const notificationAudioRef = useRef(null);
+  const notificationSoundUrlRef = useRef(null);
+  const notificationSoundUrlAltRef = useRef(null);
   const audioUnlockedRef = useRef(false);
   const lastOpenTotalRef = useRef(null);
+  const audioContextRef = useRef(null);
 
   const hasPrev = page > 1;
   const hasNext = page * pageSize < tickets.total;
@@ -36,38 +38,66 @@ export default function AdminDashboard() {
   }, [tickets.items, statusGroup]);
 
   useEffect(() => {
-    if (!notificationAudioRef.current) {
+    if (!notificationSoundUrlRef.current) {
       const base = (import.meta?.env?.BASE_URL || "/").replace(/\/?$/, "/");
-      const a = new Audio(`${base}soundeffect/notificationssound.mp3`);
-      a.preload = "auto";
-      a.volume = 1.0;
-      notificationAudioRef.current = a;
+      notificationSoundUrlRef.current = `${base}soundeffect/notificationssound.mp3`;
+      notificationSoundUrlAltRef.current = `${base}soundeffect/notificationsound.mp3`;
+    }
+
+    function fallbackBeep() {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const ctx = audioContextRef.current || new Ctx();
+        audioContextRef.current = ctx;
+        if (ctx.state === "suspended") ctx.resume().catch(() => {});
+        const now = ctx.currentTime;
+        for (let i = 0; i < 3; i++) {
+          const t = now + i * 0.2;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(880, t);
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
+          gain.gain.linearRampToValueAtTime(0, t + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.2);
+        }
+      } catch {
+        // ignore
+      }
     }
 
     function unlockAudio() {
       audioUnlockedRef.current = true;
-      const a = notificationAudioRef.current;
-      if (!a) return;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx && !audioContextRef.current) {
+        try {
+          audioContextRef.current = new Ctx();
+          if (audioContextRef.current.state === "suspended") {
+            audioContextRef.current.resume().catch(() => {});
+          }
+        } catch {
+          // ignore
+        }
+      }
+      const url = notificationSoundUrlRef.current;
+      if (!url) return;
       try {
-        const prevVol = a.volume;
+        const a = new Audio(url);
         a.volume = 0.01;
-        a.currentTime = 0;
         const p = a.play();
         if (p && typeof p.then === "function") {
           p.then(() => {
             a.pause();
             a.currentTime = 0;
-            a.volume = prevVol;
-          }).catch(() => {
-            a.volume = prevVol;
-          });
-        } else {
-          a.pause();
-          a.currentTime = 0;
-          a.volume = prevVol;
+          }).catch(fallbackBeep);
         }
       } catch {
-        // ignore
+        fallbackBeep();
       }
     }
 
@@ -92,16 +122,46 @@ export default function AdminDashboard() {
             if (lastOpenTotalRef.current == null) {
               lastOpenTotalRef.current = total;
             } else if (total > lastOpenTotalRef.current) {
-              const a = notificationAudioRef.current;
-              if (a) {
+              const url = notificationSoundUrlRef.current;
+              const urlAlt = notificationSoundUrlAltRef.current;
+              const playFallback = () => {
                 try {
-                  a.pause();
-                  a.currentTime = 0;
-                  a.volume = 1.0;
-                  a.play().catch(() => {});
+                  const Ctx = window.AudioContext || window.webkitAudioContext;
+                  if (!Ctx) return;
+                  const ctx = audioContextRef.current || new Ctx();
+                  audioContextRef.current = ctx;
+                  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+                  const now = ctx.currentTime;
+                  for (let i = 0; i < 3; i++) {
+                    const t = now + i * 0.2;
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(880, t);
+                    gain.gain.setValueAtTime(0, t);
+                    gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
+                    gain.gain.linearRampToValueAtTime(0, t + 0.15);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(t);
+                    osc.stop(t + 0.2);
+                  }
                 } catch {
                   // ignore
                 }
+              };
+              const tryPlay = (src) => {
+                if (!src) return Promise.reject();
+                const a = new Audio(src);
+                a.volume = 1.0;
+                return a.play();
+              };
+              if (url) {
+                tryPlay(url)
+                  .catch(() => (urlAlt ? tryPlay(urlAlt) : Promise.reject()))
+                  .catch(playFallback);
+              } else {
+                playFallback();
               }
               lastOpenTotalRef.current = total;
             } else {
