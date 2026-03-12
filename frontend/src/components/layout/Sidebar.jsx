@@ -5,21 +5,30 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 const WIDTH_EXPANDED = "16.25rem";
 const WIDTH_COLLAPSED = "5rem";
 
-export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggleCollapse, hidden = false }) {
+export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggleCollapse, onDesktopExpandChange, hidden = false }) {
   const [hovered, setHovered] = useState(false);
   const desktopExpanded = hovered;
 
+  function handleMouseEnter() {
+    setHovered(true);
+    onDesktopExpandChange?.(true);
+  }
+  function handleMouseLeave() {
+    setHovered(false);
+    onDesktopExpandChange?.(false);
+  }
+
   const sidebarContent = (showExpanded) => (
-    <div className="h-full flex flex-col bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800">
+    <div className="h-full flex flex-col bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-r border-indigo-200/70 dark:border-slate-800 shadow-sm shadow-indigo-950/5">
       <div className="p-4 min-h-[4.5rem] flex flex-col justify-center">
-        <span className="font-bold text-lg tracking-tight text-gray-900 dark:text-white truncate">
+        <span className="font-bold text-lg tracking-tight text-[#1e3a5f] dark:text-white truncate">
           {showExpanded ? "Rhet Ticketing" : "RT"}
         </span>
         {showExpanded && (
-          <span className="text-xs text-gray-500 dark:text-gray-400">IT Service Desk</span>
+          <span className="text-xs text-slate-500 dark:text-gray-400">IT Service Desk</span>
         )}
       </div>
-      <div className="border-t border-gray-200 dark:border-slate-800" />
+      <div className="border-t border-indigo-200/60 dark:border-slate-800" />
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
         {items.map((item) => {
           const Icon = item.icon;
@@ -35,7 +44,7 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
                 } ${
                   isActive
                     ? "bg-primary text-white"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    : "text-slate-700 dark:text-gray-300 hover:bg-indigo-100/80 dark:hover:bg-slate-800"
                 }`
               }
             >
@@ -62,11 +71,11 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
           );
         })}
       </nav>
-      <div className="p-2 border-t border-gray-200 dark:border-slate-800 flex justify-center md:hidden">
+      <div className="p-2 border-t border-indigo-200/60 dark:border-slate-800 flex justify-center md:hidden">
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 dark:text-gray-400 transition-colors"
+          className="p-2 rounded-lg text-slate-500 hover:bg-indigo-100/80 dark:hover:bg-slate-800 dark:text-gray-400 transition-colors"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRightIcon className="w-5 h-5" /> : <ChevronLeftIcon className="w-5 h-5" />}
@@ -96,12 +105,12 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
       </aside>
       {/* Desktop sidebar: expand on hover, collapse when not hovered */}
       <aside
-        className={`hidden md:block fixed top-0 left-0 z-30 h-full transition-all duration-200 ease-out bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 ${
+        className={`hidden md:block fixed top-0 left-0 z-30 h-full transition-all duration-200 ease-out bg-[#f0f4ff] dark:bg-slate-900 border-r border-indigo-200/70 dark:border-slate-800 ${
           hidden ? "opacity-0 -translate-x-4 pointer-events-none" : "opacity-100 translate-x-0"
         }`}
         style={{ width: desktopExpanded ? WIDTH_EXPANDED : WIDTH_COLLAPSED }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {sidebarContent(desktopExpanded)}
       </aside>

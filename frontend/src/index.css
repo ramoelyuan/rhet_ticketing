@@ -13,34 +13,89 @@
   --color-success: #16a34a;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
-  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  /* Light theme accents (complement white) */
+  --color-light-surface: #f0f4ff;
+  --color-light-surface-elevated: #f8fafc;
+  --color-light-border: #c7d2fe;
+  --color-light-muted: #475569;
+  --color-light-heading: #1e3a5f;
+  --color-light-accent-soft: #e0e7ff;
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.04), 0 6px 20px -4px rgb(0 0 0 / 0.08), 0 0 0 1px rgb(30 58 95 / 0.06);
+  --shadow-card-dark: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
 }
 
 @layer base {
   html {
     @apply antialiased;
+    font-size: 18.5px;
   }
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-gray-100 min-h-screen;
+    @apply min-h-screen;
+    color: var(--color-light-heading);
+  }
+  .dark body {
+    color: #f1f5f9;
+    background: #020617;
+  }
+  html:not(.dark) body {
+    background: linear-gradient(165deg, #eef2ff 0%, #e0e7ff 18%, #f0f4ff 40%, #f8fafc 65%, #eef4ff 100%);
   }
   #root {
     @apply min-h-screen;
+  }
+  html:not(.dark) h1,
+  html:not(.dark) h2 {
+    color: var(--color-light-heading);
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors;
+    @apply inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-md shadow-primary-500/25 hover:bg-primary-600 hover:shadow-lg hover:shadow-primary-500/30 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors;
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors dark:border-gray-600 dark:bg-slate-800 dark:text-gray-200 dark:hover:bg-slate-700;
+    border: 1px solid rgb(199 210 254 / 0.8);
+    background: #ffffff;
+    color: var(--color-light-heading);
+  }
+  .btn-secondary:hover {
+    background: var(--color-light-surface);
+    border-color: #a5b4fc;
+  }
+  .dark .btn-secondary {
+    border-color: rgb(71 85 105);
   }
   .input-field {
-    @apply block w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 px-3 py-2 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none transition-colors;
+    @apply block w-full rounded-lg px-3 py-2 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none transition-colors dark:border-gray-600 dark:bg-slate-800 dark:text-gray-100 dark:focus:bg-slate-800;
+    border: 1px solid rgb(199 210 254 / 0.6);
+    background: rgb(248 250 252 / 0.9);
+    color: var(--color-light-heading);
+  }
+  .input-field::placeholder {
+    color: var(--color-light-muted);
+    opacity: 0.9;
+  }
+  .input-field:focus {
+    background: #ffffff;
+  }
+  .dark .input-field {
+    border-color: rgb(71 85 105);
+    background: rgb(30 41 59);
+    color: #f1f5f9;
+  }
+  .dark .input-field:focus {
+    background: rgb(30 41 59);
   }
   .card {
-    @apply rounded-xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 overflow-hidden;
+    @apply rounded-xl overflow-hidden dark:bg-slate-900 dark:border-slate-800;
+    background: #ffffff;
+    border: 1px solid rgb(199 210 254 / 0.5);
     box-shadow: var(--shadow-card);
+  }
+  .dark .card {
+    box-shadow: var(--shadow-card-dark);
+    border-color: rgb(30 41 59);
   }
 
   .stats-screen-bg {

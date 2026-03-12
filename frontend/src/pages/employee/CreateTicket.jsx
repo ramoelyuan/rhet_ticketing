@@ -62,9 +62,11 @@ export default function CreateTicketPage() {
             </label>
             <input
               id="subject"
+              type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               className="input-field"
+              autoComplete="off"
               required
             />
           </div>
@@ -72,6 +74,7 @@ export default function CreateTicketPage() {
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Description
             </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Include device or location if relevant.</p>
             <textarea
               id="description"
               value={description}

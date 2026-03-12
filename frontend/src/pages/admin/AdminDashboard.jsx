@@ -87,12 +87,11 @@ export default function AdminDashboard() {
           const total = r.total || 0;
           setTickets({ items, total });
 
-          // Sync notification with the moment new OPEN tickets appear in Active list.
-          if (statusGroup === "active" && page === 1 && audioUnlockedRef.current) {
-            const openCountInResponse = items.filter((t) => t.status === "OPEN").length;
+          // Play sound at the exact same time the table updates when a new active ticket exists.
+          if (statusGroup === "active" && audioUnlockedRef.current) {
             if (lastOpenTotalRef.current == null) {
-              lastOpenTotalRef.current = openCountInResponse;
-            } else if (openCountInResponse > lastOpenTotalRef.current) {
+              lastOpenTotalRef.current = total;
+            } else if (total > lastOpenTotalRef.current) {
               const a = notificationAudioRef.current;
               if (a) {
                 try {
@@ -104,9 +103,9 @@ export default function AdminDashboard() {
                   // ignore
                 }
               }
-              lastOpenTotalRef.current = openCountInResponse;
+              lastOpenTotalRef.current = total;
             } else {
-              lastOpenTotalRef.current = openCountInResponse;
+              lastOpenTotalRef.current = total;
             }
           }
         })
@@ -184,6 +183,9 @@ export default function AdminDashboard() {
             <div className="hidden sm:inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600/90 via-sky-500/90 to-emerald-500/90 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
               Live
             </div>
+            <span className="text-xs text-gray-600 dark:text-gray-300">
+              {statusGroup === "active" ? "Refreshes every 5s" : "Refreshes every 30s"}
+            </span>
           </div>
         </div>
 

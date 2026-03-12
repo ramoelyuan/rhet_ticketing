@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronUpIcon, ChevronDownIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { PriorityChip, StatusChip } from "./TicketChips";
 
 function sortRows(rows, orderBy, order) {
@@ -169,8 +169,12 @@ export default function TicketTable({
             ))}
             {!rows?.length && (
               <tr>
-                <td colSpan={(showAction ? 8 : 7) + (showResolvedAt ? 1 : 0)} className="px-5 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
-                  No tickets found.
+                <td colSpan={(showAction ? 8 : 7) + (showResolvedAt ? 1 : 0)} className="px-5 py-16 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <DocumentTextIcon className="w-12 h-12 text-gray-300 dark:text-gray-600" aria-hidden />
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No tickets found</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500">No tickets match the current view or filter.</p>
+                  </div>
                 </td>
               </tr>
             )}

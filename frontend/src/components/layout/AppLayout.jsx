@@ -19,6 +19,7 @@ export default function AppLayout({ children }) {
   const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
+  const [desktopSidebarExpanded, setDesktopSidebarExpanded] = useState(false);
   const [ticketsDot, setTicketsDot] = useState(false);
   const [uiHidden, setUiHidden] = useState(false);
   const idleTimer = useRef(null);
@@ -264,11 +265,12 @@ export default function AppLayout({ children }) {
         onClose={() => setMobileOpen(false)}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((v) => !v)}
+        onDesktopExpandChange={setDesktopSidebarExpanded}
         hidden={uiHidden}
       />
       <div
         className={`min-h-screen flex flex-col transition-[margin-left] duration-300 ease-in-out ${
-          uiHidden ? "md:ml-0" : collapsed ? "md:ml-20" : "md:ml-[16.25rem]"
+          uiHidden ? "md:ml-0" : desktopSidebarExpanded ? "md:ml-[16.25rem]" : "md:ml-20"
         }`}
       >
         <div

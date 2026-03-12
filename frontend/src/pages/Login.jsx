@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { LockClosedIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
@@ -27,25 +28,32 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-950 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-[22rem]">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 dark:bg-primary/20 text-primary mb-4">
+            <LockClosedIcon className="w-7 h-7" aria-hidden />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1e3a5f] dark:text-white">
             Rhet IT Ticketing
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-sm text-slate-500 dark:text-gray-400 max-w-xs mx-auto">
             Secure portal for employees, IT support, and administrators.
           </p>
         </div>
-        <div className="card p-6">
-          <form onSubmit={onSubmit} className="space-y-4">
+        <div className="card p-6 sm:p-8 shadow-xl shadow-indigo-950/10 dark:shadow-none">
+          <h2 className="text-lg font-semibold text-[#1e3a5f] dark:text-white mb-5">
+            Sign in to your account
+          </h2>
+          <form onSubmit={onSubmit} className="space-y-5">
             {error && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+              <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2.5 text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
+                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden />
                 {error}
               </div>
             )}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1.5">
                 Work email
               </label>
               <input
@@ -54,11 +62,13 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-field"
+                placeholder="you@company.com"
                 required
+                autoComplete="email"
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1.5">
                 Password
               </label>
               <input
@@ -67,14 +77,19 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field"
+                placeholder="••••••••"
                 required
+                autoComplete="current-password"
               />
             </div>
-            <button type="submit" disabled={busy} className="btn-primary w-full py-2.5">
+            <button type="submit" disabled={busy} className="btn-primary w-full py-3 mt-1 font-medium rounded-xl">
               {busy ? "Signing in..." : "Sign In"}
             </button>
           </form>
         </div>
+        <p className="mt-6 text-center text-xs text-slate-500 dark:text-gray-500">
+          Use your work credentials to access the portal.
+        </p>
       </div>
     </div>
   );

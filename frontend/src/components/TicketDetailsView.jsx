@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { getTicket, addReply, updateStatus, takeTicket } from "../services/tickets";
 import { PriorityChip, StatusChip } from "./TicketChips";
 import TicketTimeline from "./TicketTimeline";
@@ -113,8 +113,17 @@ export default function TicketDetailsView() {
   const isOwnerTech = isTech && t.assignedTechnician?.id === user?.id;
   const canTechResolve = isOwnerTech && t.status === "IN_PROGRESS";
 
+  const listPath = user?.role === "EMPLOYEE" ? "/employee/tickets" : user?.role === "TECHNICIAN" ? "/technician" : "/admin";
+
   return (
     <div className="space-y-4">
+      <nav className="text-sm text-gray-500 dark:text-gray-400" aria-label="Breadcrumb">
+        <Link to={listPath} className="hover:text-primary-600 dark:hover:text-primary-400 hover:underline">
+          Tickets
+        </Link>
+        <span className="mx-1.5">/</span>
+        <span className="text-gray-700 dark:text-gray-300">#{t.ticketNumber}</span>
+      </nav>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Ticket #{t.ticketNumber}</h1>

@@ -83,16 +83,16 @@ export default function Topbar({ onMenu }) {
   }
 
   return (
-    <header className="sticky top-0 z-50 flex items-center h-16 px-4 gap-3 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
+    <header className="sticky top-0 z-50 flex items-center h-16 px-4 gap-3 bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-b border-indigo-200/70 dark:border-slate-800 shadow-sm shadow-indigo-950/5">
       <button
         type="button"
         onClick={onMenu}
-        className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800"
+        className="md:hidden p-2 rounded-lg text-slate-600 dark:text-gray-400 hover:bg-indigo-100/80 dark:hover:bg-slate-800"
         aria-label="Open menu"
       >
         <Bars3Icon className="w-6 h-6" />
       </button>
-      <span className="font-semibold text-gray-900 dark:text-white truncate">
+      <span className="font-semibold text-[#1e3a5f] dark:text-white truncate">
         {user ? "IT Ticketing Workspace" : "Welcome"}
       </span>
       <div className="flex-1 flex justify-center max-w-md">
@@ -115,24 +115,24 @@ export default function Topbar({ onMenu }) {
           <button
             type="button"
             onClick={toggleMode}
-            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 dark:text-gray-400"
-            aria-label="Toggle theme"
+className="p-2 rounded-lg text-slate-600 hover:bg-indigo-100/80 dark:hover:bg-slate-800 dark:text-gray-400"
+          aria-label="Toggle theme"
           >
             {mode === "light" ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
           </button>
-          <span className="hidden sm:inline-flex items-center rounded-md border border-gray-300 dark:border-slate-600 px-2 py-0.5 text-xs font-medium text-gray-700 dark:text-gray-300">
+          <span className="hidden sm:inline-flex items-center rounded-md border border-indigo-200 dark:border-slate-600 px-2 py-0.5 text-xs font-medium text-[#1e3a5f] dark:text-gray-300">
             {displayName}
           </span>
           <div className="relative">
             <button
               type="button"
               onClick={() => setProfileOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-lg py-1.5 pl-1 pr-2 text-left hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-2 rounded-lg py-1.5 pl-1 pr-2 text-left hover:bg-indigo-100/80 dark:hover:bg-slate-800 transition-colors"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white text-sm font-medium">
                 {displayName?.[0] || "A"}
               </span>
-              <span className="hidden sm:block text-sm text-gray-600 dark:text-gray-400 max-w-[120px] truncate">
+              <span className="hidden sm:block text-sm text-slate-600 dark:text-gray-400 max-w-[120px] truncate">
                 {displayName}
               </span>
               <ChevronDownIcon className="w-4 h-4 text-gray-400" />
@@ -140,14 +140,14 @@ export default function Topbar({ onMenu }) {
             {profileOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} aria-hidden />
-                <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg bg-white dark:bg-slate-800 shadow-lg border border-gray-200 dark:border-slate-700 py-1">
-                  <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 truncate border-b border-gray-100 dark:border-slate-700">
+                <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg bg-white dark:bg-slate-800 shadow-lg border border-indigo-100 dark:border-slate-700 py-1">
+                  <div className="px-3 py-2 text-sm text-slate-500 dark:text-gray-400 truncate border-b border-indigo-50 dark:border-slate-700">
                     {user.email}
                   </div>
                   <button
                     type="button"
                     onClick={openPasswordModal}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50/80 dark:hover:bg-slate-700 flex items-center gap-2"
                   >
                     <KeyIcon className="w-4 h-4" />
                     Change password
@@ -158,7 +158,7 @@ export default function Topbar({ onMenu }) {
                       setProfileOpen(false);
                       logout();
                     }}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700"
+                    className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50/80 dark:hover:bg-slate-700"
                   >
                     Logout
                   </button>
@@ -173,7 +173,7 @@ export default function Topbar({ onMenu }) {
       {passwordModalOpen && (
         <>
           <div className="fixed inset-0 z-30 bg-black/50" onClick={() => !passwordBusy && setPasswordModalOpen(false)} aria-hidden />
-          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-full max-w-sm rounded-lg bg-white dark:bg-slate-800 shadow-xl border border-gray-200 dark:border-slate-700 p-5">
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-full max-w-sm rounded-lg bg-white dark:bg-slate-800 shadow-xl border border-indigo-100 dark:border-slate-700 p-5">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change password</h2>
             {passwordSuccess ? (
               <p className="text-sm text-green-600 dark:text-green-400">Password changed successfully.</p>
