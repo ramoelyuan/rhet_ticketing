@@ -85,7 +85,7 @@ export default function EmployeeManagement() {
         createPortal(
           <>
             <div
-              className="bg-black/40"
+              className="bg-black/40 backdrop-blur-sm"
               style={{ position: "absolute", inset: 0, zIndex: 1 }}
               onClick={() => !busy && setModalOpen(false)}
               aria-hidden

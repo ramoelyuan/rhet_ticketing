@@ -146,7 +146,7 @@ className="p-2 rounded-lg text-slate-600 hover:bg-indigo-100/80 dark:hover:bg-sl
         createPortal(
           <>
             <div
-              className="bg-black/40"
+              className="bg-black/40 backdrop-blur-sm"
               style={{ position: "absolute", inset: 0, zIndex: 1 }}
               onClick={() => !passwordBusy && setPasswordModalOpen(false)}
               aria-hidden
