@@ -270,7 +270,7 @@ export default function AppLayout({ children }) {
         hidden={uiHidden}
       />
       <div
-        className={`min-h-screen flex flex-col transition-[margin-left] duration-300 ease-in-out ${
+        className={`min-h-screen flex flex-col transition-[margin-left] duration-200 ease-out ${
           uiHidden ? "md:ml-0" : desktopSidebarExpanded ? "md:ml-[16.25rem]" : "md:ml-20"
         }`}
       >
