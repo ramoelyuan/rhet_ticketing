@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import TicketTable from "../../components/TicketTable";
 import { listTickets } from "../../services/tickets";
+import { useTicketEvents } from "../../hooks/useTicketEvents";
 
 const STATUS_GROUP_OPTIONS = [
   { value: "active", label: "Active" },
@@ -16,6 +17,7 @@ export default function AdminDashboard() {
   const [statusGroup, setStatusGroup] = useState("active");
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [page, setPage] = useState(1);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const notificationSoundUrlRef = useRef(null);
   const notificationSoundUrlAltRef = useRef(null);
   const audioUnlockedRef = useRef(false);
@@ -24,6 +26,8 @@ export default function AdminDashboard() {
 
   const hasPrev = page > 1;
   const hasNext = page * pageSize < tickets.total;
+
+  useTicketEvents(() => setRefreshTrigger((t) => t + 1));
 
   const displayItems = useMemo(() => {
     if (statusGroup !== "active") return tickets.items;
@@ -199,7 +203,7 @@ export default function AdminDashboard() {
     const intervalMs = statusGroup === "active" ? 5 * 1000 : 30 * 1000;
     const interval = setInterval(fetchTickets, intervalMs);
     return () => clearInterval(interval);
-  }, [statusGroup, initialLoaded, page]);
+  }, [statusGroup, initialLoaded, page, refreshTrigger]);
 
   useEffect(() => {
     setPage(1);

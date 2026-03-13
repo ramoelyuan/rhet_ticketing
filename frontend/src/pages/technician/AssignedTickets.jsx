@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import TicketTable from "../../components/TicketTable";
 import { listTickets } from "../../services/tickets";
+import { useTicketEvents } from "../../hooks/useTicketEvents";
 
 export default function AssignedTickets() {
   const [q, setQ] = useState("");
@@ -22,6 +23,10 @@ export default function AssignedTickets() {
     });
     setData(res);
   }
+
+  useTicketEvents(() => {
+    load(1).then(() => setPage(1)).catch(() => {});
+  });
 
   useEffect(() => {
     const initialQ = searchParams.get("q") || "";

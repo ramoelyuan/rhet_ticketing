@@ -3,6 +3,7 @@ const { pool } = require("../config/db");
 const { addTimelineEvent } = require("../services/timeline");
 const { addActivityLog } = require("../services/activityLog");
 const { ACTIVE_STATUSES } = require("../services/assignment");
+const { broadcastNewTicket } = require("../services/sse");
 
 const createTicketSchema = z.object({
   subject: z.string().trim().min(3),
@@ -98,6 +99,8 @@ async function createTicket(req, res, next) {
     });
 
     await client.query("COMMIT");
+
+    broadcastNewTicket();
 
     return res.status(201).json({
       ticket: {

@@ -11,6 +11,7 @@ const authRoutes = require("./routes/authRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
+const eventsRoutes = require("./routes/eventsRoutes");
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), env.uploadDir)));
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRoutes);
+app.use("/api/events", eventsRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
