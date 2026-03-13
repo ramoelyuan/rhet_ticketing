@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import {
   Bars3Icon,
-  MagnifyingGlassIcon,
   SunIcon,
   MoonIcon,
   ChevronDownIcon,
@@ -24,7 +23,6 @@ export default function Topbar({ onMenu }) {
   const displayName = user ? (user.fullName || roleDisplayLabel(user.role)) : "";
   const roleLabel = user ? roleDisplayLabel(user.role) : "";
   const { mode, toggleMode } = useColorMode();
-  const [search, setSearch] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -33,7 +31,6 @@ export default function Topbar({ onMenu }) {
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [passwordBusy, setPasswordBusy] = useState(false);
-  const nav = useNavigate();
 
   function openPasswordModal() {
     setProfileOpen(false);
@@ -74,15 +71,6 @@ export default function Topbar({ onMenu }) {
     }
   }
 
-  function handleSearchSubmit(e) {
-    if (e.key !== "Enter" || !search.trim()) return;
-    const term = search.trim();
-    if (!user) return;
-    if (user.role === "ADMIN") nav(`/admin/tickets?q=${encodeURIComponent(term)}`);
-    else if (user.role === "TECHNICIAN") nav(`/technician?q=${encodeURIComponent(term)}`);
-    else nav(`/employee/tickets?q=${encodeURIComponent(term)}`);
-  }
-
   return (
     <header className="sticky top-0 z-50 flex items-center h-16 px-4 gap-3 bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-b border-indigo-200/70 dark:border-slate-800 shadow-sm shadow-indigo-950/5 dark:shadow-none">
       <button
@@ -93,21 +81,7 @@ export default function Topbar({ onMenu }) {
       >
         <Bars3Icon className="w-6 h-6" />
       </button>
-      <div className="flex-1 flex justify-center max-w-md">
-        {user && (
-          <div className="relative w-full">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="search"
-              placeholder="Search tickets..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={handleSearchSubmit}
-              className="input-field w-full pl-10 py-2 rounded-full text-sm"
-            />
-          </div>
-        )}
-      </div>
+      <div className="flex-1" />
       {user && (
         <div className="flex items-center gap-2 ml-auto">
           <button
@@ -167,12 +141,31 @@ className="p-2 rounded-lg text-slate-600 hover:bg-indigo-100/80 dark:hover:bg-sl
         </div>
       )}
 
-      {/* Change password modal */}
-      {passwordModalOpen && (
-        <>
-          <div className="fixed inset-0 z-30 bg-black/50" onClick={() => !passwordBusy && setPasswordModalOpen(false)} aria-hidden />
-          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 w-full max-w-sm rounded-lg bg-white dark:bg-slate-800 shadow-xl border border-indigo-100 dark:border-slate-700 p-5">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change password</h2>
+      {/* Change password modal - rendered into #modal-root; backdrop closes only when clicking overlay, not the dialog */}
+      {passwordModalOpen &&
+        createPortal(
+          <>
+            <div
+              className="bg-black/40"
+              style={{ position: "absolute", inset: 0, zIndex: 1 }}
+              onClick={() => !passwordBusy && setPasswordModalOpen(false)}
+              aria-hidden
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="change-password-title"
+              className="rounded-lg shadow-xl border border-indigo-100 dark:border-slate-700 p-5 overflow-y-auto w-full max-w-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
+              style={{
+                maxHeight: "min(100vh - 2rem, 28rem)",
+                boxSizing: "border-box",
+                position: "relative",
+                zIndex: 2,
+                pointerEvents: "auto",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+                <h2 id="change-password-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Change password</h2>
             {passwordSuccess ? (
               <p className="text-sm text-green-600 dark:text-green-400">Password changed successfully.</p>
             ) : (
@@ -228,9 +221,10 @@ className="p-2 rounded-lg text-slate-600 hover:bg-indigo-100/80 dark:hover:bg-sl
                 </div>
               </form>
             )}
-          </div>
-        </>
-      )}
+            </div>
+          </>,
+          document.getElementById("modal-root") || document.body
+        )}
     </header>
   );
 }

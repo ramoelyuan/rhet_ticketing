@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   createTechnician,
   listTechnicians,
@@ -8,9 +9,11 @@ import {
 export default function TechnicianManagement() {
   const [rows, setRows] = useState([]);
   const [msg, setMsg] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function load() {
     const res = await listTechnicians();
@@ -21,24 +24,55 @@ export default function TechnicianManagement() {
     load().catch(() => {});
   }, []);
 
+  function openModal() {
+    setFullName("");
+    setEmail("");
+    setPassword("");
+    setMsg(null);
+    setModalOpen(true);
+  }
+
   async function onCreate(e) {
     e.preventDefault();
     setMsg(null);
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    if (trimmedName.length < 2) {
+      setMsg({ type: "error", text: "Full name must be at least 2 characters." });
+      return;
+    }
+    if (!trimmedEmail) {
+      setMsg({ type: "error", text: "Email is required." });
+      return;
+    }
+    if (password.length < 6) {
+      setMsg({ type: "error", text: "Password must be at least 6 characters." });
+      return;
+    }
+    setBusy(true);
     try {
-      await createTechnician({ fullName, email, password });
+      await createTechnician({ fullName: trimmedName, email: trimmedEmail, password });
       setMsg({ type: "success", text: "IT support created." });
       setFullName("");
       setEmail("");
       setPassword("");
+      setModalOpen(false);
       await load();
     } catch (err) {
       setMsg({ type: "error", text: err?.response?.data?.error || "Failed to create IT support" });
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900 dark:text-white">IT Support Management</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">IT Support Management</h1>
+        <button type="button" onClick={openModal} className="btn-primary">
+          Add IT support
+        </button>
+      </div>
       {msg && (
         <div
           className={`rounded-lg px-3 py-2 text-sm ${
@@ -50,43 +84,73 @@ export default function TechnicianManagement() {
           {msg.text}
         </div>
       )}
-      <div className="card p-5">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add IT Support</h2>
-        <form onSubmit={onCreate} className="grid grid-cols-1 md:grid-cols-12 gap-3">
-          <div className="md:col-span-4">
-            <input
-              type="text"
-              placeholder="Full name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="input-field"
+      {modalOpen &&
+        createPortal(
+          <>
+            <div
+              className="bg-black/40"
+              style={{ position: "absolute", inset: 0, zIndex: 1 }}
+              onClick={() => !busy && setModalOpen(false)}
+              aria-hidden
             />
-          </div>
-          <div className="md:col-span-4">
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input-field"
-            />
-          </div>
-          <div className="md:col-span-3">
-            <input
-              type="password"
-              placeholder="Temp password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
-            />
-          </div>
-          <div className="md:col-span-1">
-            <button type="submit" className="btn-primary w-full">
-              Add
-            </button>
-          </div>
-        </form>
-      </div>
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="add-tech-title"
+              className="rounded-lg bg-white dark:bg-slate-800 p-5 shadow-xl border border-indigo-100 dark:border-slate-700 w-full max-w-md"
+              style={{ position: "relative", zIndex: 2, pointerEvents: "auto" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 id="add-tech-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add IT support</h2>
+              <form onSubmit={onCreate} className="space-y-3">
+                <div>
+                  <label htmlFor="tech-fullname" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full name (min 2 characters)</label>
+                  <input
+                    id="tech-fullname"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="input-field w-full"
+                    minLength={2}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="tech-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <input
+                    id="tech-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="input-field w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="tech-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Temporary password (min 6 characters)</label>
+                  <input
+                    id="tech-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input-field w-full"
+                    minLength={6}
+                    required
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button type="submit" disabled={busy} className="btn-primary flex-1">
+                    {busy ? "Adding..." : "Add IT support"}
+                  </button>
+                  <button type="button" onClick={() => !busy && setModalOpen(false)} disabled={busy} className="btn-secondary">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </>,
+          document.getElementById("modal-root") || document.body
+        )}
       <div className="card p-5">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">IT Supports</h2>
         <ul className="space-y-2">
