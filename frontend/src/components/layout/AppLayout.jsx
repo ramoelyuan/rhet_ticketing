@@ -39,7 +39,7 @@ export default function AppLayout({ children }) {
 
     function armTimer() {
       clearTimer();
-      idleTimer.current = setTimeout(() => setUiHidden(true), 10 * 1000);
+      idleTimer.current = setTimeout(() => setUiHidden(true), 5 * 1000);
     }
 
     function onActivity() {
