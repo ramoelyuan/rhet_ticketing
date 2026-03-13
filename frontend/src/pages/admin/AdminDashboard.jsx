@@ -231,7 +231,7 @@ export default function AdminDashboard() {
       <div className="pointer-events-none fixed inset-0 -z-10 stats-screen-bg" />
       <div className="pointer-events-none fixed inset-0 -z-10 stats-screen-grid opacity-60 dark:opacity-35" />
 
-      <div className="space-y-3 uppercase">
+      <div className="space-y-3 uppercase max-w-4xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="rounded-xl border border-[#0a2e3c]/80 bg-white dark:bg-[#0a2e3c] px-4 py-2.5 shadow-lg">
             <h1 className="text-base font-medium tracking-tight text-[#0a2e3c] dark:text-white">
@@ -279,6 +279,7 @@ export default function AdminDashboard() {
                   disableSort
                   size="large"
                   translucent
+                  stackDateTime
                 />
               </div>
             </div>

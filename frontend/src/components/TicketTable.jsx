@@ -50,6 +50,7 @@ export default function TicketTable({
   size = "normal", // normal | large
   translucent = false,
   emptyAction = null, // { label: string, to: string } e.g. { label: "Create ticket", to: "/employee/create" }
+  stackDateTime = false, // when true, show date above time for Requested/Resolved at
 }) {
   const [orderBy, setOrderBy] = useState("createdAt");
   const [order, setOrder] = useState("desc");
@@ -138,37 +139,68 @@ export default function TicketTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-            {displayRows.map((t) => (
-              <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                <td className={`px-4 ${padY} ${cellText} text-gray-900 dark:text-gray-100 whitespace-nowrap`}>{t.ticketNumber}</td>
-                <td className={`px-4 ${padY} ${cellText} font-medium text-gray-900 dark:text-white max-w-xs truncate`} title={t.createdByName}>
-                  {t.createdByName || "—"}
-                </td>
-                <td className={`px-4 ${padY} ${cellText} text-gray-600 dark:text-gray-400`}>{t.category || "—"}</td>
-                <td className={`px-4 ${padY}`}>
-                  <PriorityChip priority={t.priority} />
-                </td>
-                <td className={`px-4 ${padY}`}>
-                  <StatusChip status={t.status} />
-                </td>
-                <td className={`px-4 ${padY} ${cellText} text-gray-600 dark:text-gray-400 whitespace-nowrap`}>{t.technicianName || "—"}</td>
-                <td className={`px-4 ${padY} ${cellText} text-gray-600 dark:text-gray-400 whitespace-nowrap`}>
-                  {t.createdAt ? new Date(t.createdAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "—"}
-                </td>
-                {showResolvedAt && (
-                  <td className={`px-4 ${padY} ${cellText} text-gray-600 dark:text-gray-400 whitespace-nowrap`}>
-                    {t.resolvedAt ? new Date(t.resolvedAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "—"}
+            {displayRows.map((t) => {
+              const createdAt = t.createdAt ? new Date(t.createdAt) : null;
+              const resolvedAt = t.resolvedAt ? new Date(t.resolvedAt) : null;
+              const createdDate = createdAt ? createdAt.toLocaleDateString() : null;
+              const createdTime = createdAt ? createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null;
+              const resolvedDate = resolvedAt ? resolvedAt.toLocaleDateString() : null;
+              const resolvedTime = resolvedAt ? resolvedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null;
+
+              return (
+                <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <td className={`px-4 ${padY} ${cellText} text-gray-900 dark:text-gray-100 whitespace-nowrap`}>{t.ticketNumber}</td>
+                  <td className={`px-4 ${padY} ${cellText} font-medium text-gray-900 dark:text-white max-w-xs truncate`} title={t.createdByName}>
+                    {t.createdByName || "—"}
                   </td>
-                )}
-                {showAction && (
-                  <td className="px-5 py-3 text-right">
-                    <Link to={`${detailsBasePath}/${t.id}`} className="btn-primary py-1.5 px-3 text-xs">
-                      Details
-                    </Link>
+                  <td className={`px-4 ${padY} ${cellText} text-gray-600 dark:text-gray-400`}>{t.category || "—"}</td>
+                  <td className={`px-4 ${padY}`}>
+                    <PriorityChip priority={t.priority} />
                   </td>
-                )}
-              </tr>
-            ))}
+                  <td className={`px-4 ${padY}`}>
+                    <StatusChip status={t.status} />
+                  </td>
+                  <td className={`px-4 ${padY} ${cellText} text-gray-600 dark:text-gray-400 whitespace-nowrap`}>{t.technicianName || "—"}</td>
+                  <td className={`px-4 ${padY} ${cellText} text-gray-600 dark:text-gray-400 ${stackDateTime ? "" : "whitespace-nowrap"}`}>
+                    {createdAt ? (
+                      stackDateTime ? (
+                        <div className="leading-tight text-center">
+                          <div>{createdDate}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{createdTime}</div>
+                        </div>
+                      ) : (
+                        createdAt.toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })
+                      )
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  {showResolvedAt && (
+                    <td className={`px-4 ${padY} ${cellText} text-gray-600 dark:text-gray-400 ${stackDateTime ? "" : "whitespace-nowrap"}`}>
+                      {resolvedAt ? (
+                        stackDateTime ? (
+                          <div className="leading-tight text-center">
+                            <div>{resolvedDate}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{resolvedTime}</div>
+                          </div>
+                        ) : (
+                          resolvedAt.toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })
+                        )
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  )}
+                  {showAction && (
+                    <td className="px-5 py-3 text-right">
+                      <Link to={`${detailsBasePath}/${t.id}`} className="btn-primary py-1.5 px-3 text-xs">
+                        Details
+                      </Link>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
             {!rows?.length && (
               <tr>
                 <td colSpan={(showAction ? 8 : 7) + (showResolvedAt ? 1 : 0)} className="px-5 py-16 text-center">
