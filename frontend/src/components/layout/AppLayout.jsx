@@ -288,10 +288,11 @@ export default function AppLayout({ children }) {
       {user?.role === "EMPLOYEE" && (
         <Link
           to="/employee/create"
-          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary-500/30 hover:bg-primary-600 hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all"
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 pl-3 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-600 hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all"
           aria-label="Create ticket"
         >
-          <PlusCircleIcon className="h-8 w-8" />
+          <PlusCircleIcon className="h-8 w-8 shrink-0" />
+          <span className="pr-1 font-medium whitespace-nowrap">Create ticket</span>
         </Link>
       )}
     </div>
