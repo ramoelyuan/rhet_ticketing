@@ -281,7 +281,11 @@ export default function AppLayout({ children }) {
         >
           <Topbar onMenu={() => setMobileOpen(true)} />
         </div>
-        <main className="relative z-0 flex-1 px-4 md:px-6 py-6 md:py-8 max-w-7xl w-full mx-auto">
+        <main
+          className={`relative z-0 flex-1 px-4 md:px-6 py-6 md:py-8 max-w-7xl w-full mx-auto transition-[margin-top] duration-200 ease-out ${
+            uiHidden ? "-mt-16" : "mt-0"
+          }`}
+        >
           {children}
         </main>
       </div>
