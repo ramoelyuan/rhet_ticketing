@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LockClosedIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
@@ -31,14 +30,9 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-[22rem]">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 dark:bg-primary/20 text-primary mb-4">
-            <LockClosedIcon className="w-7 h-7" aria-hidden />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1e3a5f] dark:text-white">
-            Rhet IT Ticketing
-          </h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-gray-400 max-w-xs mx-auto">
-            Secure portal for employees, IT support, and administrators.
+          <img src="/logo/rhetlogo.png" alt="Rhet" className="h-[4.75rem] w-auto mx-auto mb-4 object-contain" />
+          <p className="text-xl font-bold text-slate-600 dark:text-gray-300 max-w-xs mx-auto">
+            RHET Ticketing System
           </p>
         </div>
         <div className="card p-6 sm:p-8 shadow-xl shadow-indigo-950/10 dark:shadow-none">

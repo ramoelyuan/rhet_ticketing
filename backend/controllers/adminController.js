@@ -125,8 +125,11 @@ async function createEmployee(req, res, next) {
     });
     res.status(201).json({ employee: rows[0] });
   } catch (err) {
-    if (err instanceof z.ZodError)
-      return res.status(400).json({ error: "Invalid request", details: err.issues });
+    if (err instanceof z.ZodError) {
+      const first = err.issues[0];
+      const message = first ? (first.path.join(".") + ": " + first.message) : "Invalid request";
+      return res.status(400).json({ error: message, details: err.issues });
+    }
     if (err.code === "23505")
       return res.status(409).json({ error: "An account with this email already exists." });
     next(err);

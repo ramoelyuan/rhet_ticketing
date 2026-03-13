@@ -3,9 +3,29 @@ import { listActivityLogs } from "../../services/admin";
 
 function formatActorRole(role) {
   if (role === "TECHNICIAN") return "IT Support";
-  if (role === "ADMIN") return "IT Admin";
-  if (role === "EMPLOYEE") return "IT Employee";
+  if (role === "ADMIN") return "Admin";
+  if (role === "EMPLOYEE") return "Employee";
   return role;
+}
+
+function formatActionLabel(action) {
+  const labels = {
+    TICKET_STATUS_CHANGED: "Ticket status changed",
+    TICKET_ASSIGNED: "Ticket assigned",
+    TICKET_TAKEN: "Ticket taken",
+    TICKET_REPLIED: "Ticket reply",
+    CATEGORY_CREATED: "Category created",
+    CATEGORY_TOGGLED: "Category toggled",
+    EMPLOYEE_CREATED: "Employee created",
+    IT_SUPPORT_CREATED: "IT Support created",
+    USER_ACTIVE_TOGGLED: "User active toggled",
+  };
+  return labels[action] || action.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatStatus(s) {
+  if (s == null || typeof s !== "string") return "";
+  return s.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function formatDetails(action, meta) {
@@ -14,16 +34,24 @@ function formatDetails(action, meta) {
   switch (action) {
     case "TICKET_STATUS_CHANGED":
       return m.from != null && m.to != null
-        ? `Status changed from ${m.from.replace(/_/g, " ")} to ${m.to.replace(/_/g, " ")}`
-        : m.ticketId ? `Ticket ${m.ticketId.slice(0, 8)}…` : "—";
+        ? `From ${formatStatus(m.from)} to ${formatStatus(m.to)}`
+        : m.ticketId ? `Ticket ${String(m.ticketId).slice(0, 8)}…` : "—";
     case "TICKET_ASSIGNED":
-      return m.to ? `Assigned to ${m.to}` : m.from ? "Unassigned" : "—";
+      return m.to != null ? "Assigned to technician" : m.from != null ? "Unassigned" : "—";
     case "TICKET_TAKEN":
-      return "Ticket taken";
+      return "Ticket taken by IT Support";
     case "TICKET_REPLIED":
       return m.isInternal ? "Internal note added" : "Reply added";
     case "CATEGORY_CREATED":
-      return m.name ? `Category "${m.name}" created` : "—";
+      return m.name ? `"${m.name}"` : "—";
+    case "CATEGORY_TOGGLED":
+      return m.isActive === true ? "Category enabled" : m.isActive === false ? "Category disabled" : "—";
+    case "EMPLOYEE_CREATED":
+      return m.email ? `Account created: ${m.email}` : "—";
+    case "IT_SUPPORT_CREATED":
+      return m.email ? `Account created: ${m.email}` : "—";
+    case "USER_ACTIVE_TOGGLED":
+      return m.isActive === true ? "User activated" : m.isActive === false ? "User deactivated" : "—";
     default:
       if (Object.keys(m).length === 0) return "—";
       return Object.entries(m)
@@ -98,13 +126,13 @@ export default function ActivityLogs() {
                     {new Date(r.createdAt).toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                    {r.actorRole === "ADMIN" ? "IT Admin" : r.actorRole === "EMPLOYEE" ? "IT Employee" : r.actorName}
+                    {r.actorName || "—"}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                     {formatActorRole(r.actorRole)}
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                    {r.action}
+                    {formatActionLabel(r.action)}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                     {formatDetails(r.action, r.meta)}

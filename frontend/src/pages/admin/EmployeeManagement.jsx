@@ -20,15 +20,30 @@ export default function EmployeeManagement() {
   async function onCreate(e) {
     e.preventDefault();
     setMsg(null);
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    if (trimmedName.length < 2) {
+      setMsg({ type: "error", text: "Full name must be at least 2 characters." });
+      return;
+    }
+    if (!trimmedEmail) {
+      setMsg({ type: "error", text: "Email is required." });
+      return;
+    }
+    if (password.length < 6) {
+      setMsg({ type: "error", text: "Password must be at least 6 characters." });
+      return;
+    }
     try {
-      await createEmployee({ fullName, email, password });
+      await createEmployee({ fullName: trimmedName, email: trimmedEmail, password });
       setMsg({ type: "success", text: "Employee created." });
       setFullName("");
       setEmail("");
       setPassword("");
       await load();
     } catch (err) {
-      setMsg({ type: "error", text: err?.response?.data?.error || "Failed to create employee" });
+      const data = err?.response?.data;
+      setMsg({ type: "error", text: data?.error || "Failed to create employee" });
     }
   }
 
@@ -52,10 +67,12 @@ export default function EmployeeManagement() {
           <div className="md:col-span-4">
             <input
               type="text"
-              placeholder="Full name"
+              placeholder="Full name (min 2 characters)"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="input-field"
+              minLength={2}
+              required
             />
           </div>
           <div className="md:col-span-4">
@@ -65,15 +82,18 @@ export default function EmployeeManagement() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input-field"
+              required
             />
           </div>
           <div className="md:col-span-3">
             <input
               type="password"
-              placeholder="Temp password"
+              placeholder="Temp password (min 6 characters)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input-field"
+              minLength={6}
+              required
             />
           </div>
           <div className="md:col-span-1">

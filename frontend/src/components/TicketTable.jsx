@@ -49,6 +49,7 @@ export default function TicketTable({
   disableSort = false,
   size = "normal", // normal | large
   translucent = false,
+  emptyAction = null, // { label: string, to: string } e.g. { label: "Create ticket", to: "/employee/create" }
 }) {
   const [orderBy, setOrderBy] = useState("createdAt");
   const [order, setOrder] = useState("desc");
@@ -171,10 +172,15 @@ export default function TicketTable({
             {!rows?.length && (
               <tr>
                 <td colSpan={(showAction ? 8 : 7) + (showResolvedAt ? 1 : 0)} className="px-5 py-16 text-center">
-                  <div className="flex flex-col items-center gap-2">
+                  <div className="flex flex-col items-center gap-3">
                     <DocumentTextIcon className="w-12 h-12 text-gray-300 dark:text-gray-600" aria-hidden />
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No tickets found</p>
                     <p className="text-xs text-gray-500 dark:text-gray-500">No tickets match the current view or filter.</p>
+                    {emptyAction && (
+                      <Link to={emptyAction.to} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+                        {emptyAction.label}
+                      </Link>
+                    )}
                   </div>
                 </td>
               </tr>

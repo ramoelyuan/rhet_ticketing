@@ -20,12 +20,10 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
 
   const sidebarContent = (showExpanded) => (
     <div className="h-full flex flex-col bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-r border-indigo-200/70 dark:border-slate-800 shadow-sm shadow-indigo-950/5 dark:shadow-none">
-      <div className="p-4 min-h-[4.5rem] flex flex-col justify-center">
-        <span className="font-bold text-lg tracking-tight text-[#1e3a5f] dark:text-white truncate">
-          {showExpanded ? "Rhet Ticketing" : "RT"}
-        </span>
+      <div className="p-4 min-h-[4.5rem] flex items-center gap-2">
+        <img src="/logo/rhetlogo.png" alt="Rhet" className="h-9 w-auto flex-shrink-0 object-contain" />
         {showExpanded && (
-          <span className="text-xs text-slate-500 dark:text-gray-400">IT Service Desk</span>
+          <span className="text-sm font-bold uppercase text-slate-500 dark:text-gray-400 truncate">IT Service Desk</span>
         )}
       </div>
       <div className="border-t border-indigo-200/60 dark:border-slate-800" />

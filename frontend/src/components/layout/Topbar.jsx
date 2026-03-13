@@ -21,7 +21,8 @@ function roleDisplayLabel(role) {
 
 export default function Topbar({ onMenu }) {
   const { user, logout } = useAuth();
-  const displayName = user ? roleDisplayLabel(user.role) : "";
+  const displayName = user ? (user.fullName || roleDisplayLabel(user.role)) : "";
+  const roleLabel = user ? roleDisplayLabel(user.role) : "";
   const { mode, toggleMode } = useColorMode();
   const [search, setSearch] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -92,9 +93,6 @@ export default function Topbar({ onMenu }) {
       >
         <Bars3Icon className="w-6 h-6" />
       </button>
-      <span className="font-semibold text-[#1e3a5f] dark:text-white truncate">
-        {user ? "IT Ticketing Workspace" : "Welcome"}
-      </span>
       <div className="flex-1 flex justify-center max-w-md">
         {user && (
           <div className="relative w-full">
@@ -121,7 +119,7 @@ className="p-2 rounded-lg text-slate-600 hover:bg-indigo-100/80 dark:hover:bg-sl
             {mode === "light" ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
           </button>
           <span className="hidden sm:inline-flex items-center rounded-md border border-indigo-200 dark:border-slate-600 px-2 py-0.5 text-xs font-medium text-[#1e3a5f] dark:text-gray-300">
-            {displayName}
+            {roleLabel}
           </span>
           <div className="relative">
             <button

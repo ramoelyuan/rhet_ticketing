@@ -87,6 +87,7 @@ export default function CreateTicketPage() {
             <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Subject
             </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">3–100 characters</p>
             <input
               id="subject"
               type="text"
@@ -95,6 +96,7 @@ export default function CreateTicketPage() {
               className="input-field"
               autoComplete="off"
               minLength={3}
+              maxLength={100}
               required
             />
           </div>
@@ -102,7 +104,7 @@ export default function CreateTicketPage() {
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Description
             </label>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Include device or location if relevant.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1.5">At least 5 characters. Include device or location if relevant.</p>
             <textarea
               id="description"
               value={description}

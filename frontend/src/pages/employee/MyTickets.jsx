@@ -35,6 +35,20 @@ export default function MyTickets() {
     };
   }, [q, status, priority]);
 
+  const hasFilters = !!(q || status || priority);
+  const filterEmpty = data.items.length === 0 && hasFilters;
+
+  function clearFilters() {
+    setQ("");
+    setStatus("");
+    setPriority("");
+    setPage(1);
+    load(1).catch(() => {});
+  }
+
+  const hasPrev = page > 1;
+  const hasNext = page * data.limit < data.total;
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-gray-900 dark:text-white">My Tickets</h1>
@@ -67,25 +81,41 @@ export default function MyTickets() {
           </select>
         </div>
       </div>
-      <TicketTable title="Tickets" rows={data.items} detailsBasePath="/employee/tickets" />
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          disabled={page <= 1}
-          onClick={() => load(page - 1).then(() => setPage((p) => p - 1))}
-          className="btn-secondary disabled:opacity-50"
-        >
-          Prev
-        </button>
-        <button
-          type="button"
-          disabled={page * data.limit >= data.total}
-          onClick={() => load(page + 1).then(() => setPage((p) => p + 1))}
-          className="btn-secondary disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div>
+      {filterEmpty && (
+        <div className="card px-5 py-8 text-center">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No tickets match your filters.</p>
+          <button type="button" onClick={clearFilters} className="mt-3 text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+            Clear filters
+          </button>
+        </div>
+      )}
+      {!filterEmpty && (
+        <>
+          <div className="overflow-x-auto">
+            <TicketTable title="Tickets" rows={data.items} detailsBasePath="/employee/tickets" emptyAction={{ label: "Create ticket", to: "/employee/create" }} />
+          </div>
+          {(hasPrev || hasNext) && (
+            <div className="flex justify-end gap-2 -mt-2 relative z-10">
+              <button
+                type="button"
+                disabled={!hasPrev}
+                onClick={() => load(page - 1).then(() => setPage((p) => p - 1))}
+                className="btn-secondary disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <button
+                type="button"
+                disabled={!hasNext}
+                onClick={() => load(page + 1).then(() => setPage((p) => p + 1))}
+                className="btn-secondary disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

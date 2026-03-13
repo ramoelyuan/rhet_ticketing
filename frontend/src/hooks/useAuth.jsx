@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Token is in localStorage so session persists when the user closes the tab
     const token = localStorage.getItem("token");
     if (!token) {
       setLoading(false);

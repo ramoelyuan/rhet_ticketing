@@ -117,6 +117,20 @@ export default function AdminDashboard() {
           const total = r.total || 0;
           setTickets({ items, total });
 
+          // When viewing resolved/unresolved, if a new open ticket appears, switch filter to active.
+          if (statusGroup === "resolved" || statusGroup === "unresolved") {
+            listTickets({ page: 1, limit: 1, statusGroup: "active" }).then((activeRes) => {
+              const activeTotal = activeRes.total || 0;
+              if (lastOpenTotalRef.current != null && activeTotal > lastOpenTotalRef.current) {
+                setStatusGroup("active");
+                setPage(1);
+                lastOpenTotalRef.current = activeTotal;
+              } else if (lastOpenTotalRef.current == null) {
+                lastOpenTotalRef.current = activeTotal;
+              }
+            });
+          }
+
           // Play sound at the exact same time the table updates when a new active ticket exists.
           if (statusGroup === "active" && audioUnlockedRef.current) {
             if (lastOpenTotalRef.current == null) {
@@ -215,8 +229,8 @@ export default function AdminDashboard() {
 
       <div className="space-y-3 uppercase">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="rounded-xl border border-white/50 dark:border-white/40 bg-white/55 dark:bg-white/25 px-4 py-2.5 backdrop-blur-md shadow-lg">
-            <h1 className="text-lg md:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">
+          <div className="rounded-xl border border-[#0a2e3c]/80 bg-white dark:bg-[#0a2e3c] px-4 py-2.5 shadow-lg">
+            <h1 className="text-base font-medium tracking-tight text-[#0a2e3c] dark:text-white">
               Tickets
             </h1>
           </div>

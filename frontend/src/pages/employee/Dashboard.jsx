@@ -70,7 +70,7 @@ export default function EmployeeDashboard() {
         <StatCard label="Resolved" value={totals.RESOLVED} />
         <StatCard label="Not Resolved" value={totals.NOT_RESOLVED} />
       </div>
-      <TicketTable title="Recent Tickets" rows={data.items} detailsBasePath="/employee/tickets" />
+      <TicketTable title="Recent Tickets" rows={data.items} detailsBasePath="/employee/tickets" emptyAction={{ label: "Create ticket", to: "/employee/create" }} />
     </div>
   );
 }
