@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { listTickets } from "../../services/tickets";
 import TicketTable from "../../components/TicketTable";
+import Loading from "../../components/Loading";
 
 function StatCard({ label, value }) {
   return (
@@ -12,11 +13,13 @@ function StatCard({ label, value }) {
 }
 
 export default function EmployeeDashboard() {
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ items: [], total: 0 });
   const [totals, setTotals] = useState({ all: 0, OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, NOT_RESOLVED: 0 });
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     async function load() {
       try {
         const [recent, all, open, inProgress, resolved, notResolved] = await Promise.all([
@@ -41,6 +44,8 @@ export default function EmployeeDashboard() {
           setData({ items: [], total: 0 });
           setTotals({ all: 0, OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, NOT_RESOLVED: 0 });
         }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
     load();
@@ -54,6 +59,22 @@ export default function EmployeeDashboard() {
     for (const t of data.items) counts[t.status] = (counts[t.status] || 0) + 1;
     return counts;
   }, [data]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">My Support Tickets</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Snapshot of your recent requests and their current status.
+          </p>
+        </div>
+        <div className="card min-h-64 flex items-center justify-center">
+          <Loading />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

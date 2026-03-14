@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Loading from "../../components/Loading";
 import {
   reportCategoryDistribution,
   reportMonthlyTrends,
@@ -23,17 +24,36 @@ import {
 const PIE_COLORS = ["#2563eb", "#0ea5e9", "#16a34a", "#f59e0b", "#ef4444", "#a855f7", "#64748b"];
 
 export default function Reports() {
+  const [loading, setLoading] = useState(true);
   const [ticketsPerTech, setTicketsPerTech] = useState([]);
   const [categoryDist, setCategoryDist] = useState([]);
   const [monthly, setMonthly] = useState([]);
   const [performance, setPerformance] = useState([]);
 
   useEffect(() => {
-    reportTicketsPerTechnician().then((r) => setTicketsPerTech(r.data || [])).catch(() => setTicketsPerTech([]));
-    reportCategoryDistribution().then((r) => setCategoryDist(r.data || [])).catch(() => setCategoryDist([]));
-    reportMonthlyTrends().then((r) => setMonthly(r.data || [])).catch(() => setMonthly([]));
-    reportTechnicianPerformance().then((r) => setPerformance(r.data || [])).catch(() => setPerformance([]));
+    Promise.all([
+      reportTicketsPerTechnician().then((r) => r.data || []).catch(() => []),
+      reportCategoryDistribution().then((r) => r.data || []).catch(() => []),
+      reportMonthlyTrends().then((r) => r.data || []).catch(() => []),
+      reportTechnicianPerformance().then((r) => r.data || []).catch(() => []),
+    ]).then(([a, b, c, d]) => {
+      setTicketsPerTech(a);
+      setCategoryDist(b);
+      setMonthly(c);
+      setPerformance(d);
+    }).finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
+        <div className="card min-h-64 flex items-center justify-center">
+          <Loading />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

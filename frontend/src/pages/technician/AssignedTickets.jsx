@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import TicketTable from "../../components/TicketTable";
+import Loading from "../../components/Loading";
 import { listTickets } from "../../services/tickets";
 import { useTicketEvents } from "../../hooks/useTicketEvents";
 
@@ -9,19 +10,25 @@ export default function AssignedTickets() {
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ items: [], total: 0, limit: 10 });
   const [searchParams] = useSearchParams();
   const debounceRef = useRef(null);
 
   async function load(nextPage = page) {
-    const res = await listTickets({
-      page: nextPage,
-      limit: 10,
-      q: q || undefined,
-      status: status || undefined,
-      priority: priority || undefined,
-    });
-    setData(res);
+    setLoading(true);
+    try {
+      const res = await listTickets({
+        page: nextPage,
+        limit: 10,
+        q: q || undefined,
+        status: status || undefined,
+        priority: priority || undefined,
+      });
+      setData(res);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useTicketEvents(() => {
@@ -31,7 +38,7 @@ export default function AssignedTickets() {
   useEffect(() => {
     const initialQ = searchParams.get("q") || "";
     if (initialQ) setQ(initialQ);
-    load(1).then(() => setPage(1)).catch(() => {});
+    load(1).then(() => setPage(1)).catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -76,7 +83,13 @@ export default function AssignedTickets() {
           </select>
         </div>
       </div>
+      {loading ? (
+        <div className="card min-h-64 flex items-center justify-center">
+          <Loading />
+        </div>
+      ) : (
       <TicketTable title="Tickets" rows={data.items} detailsBasePath="/technician/tickets" />
+      )}
       <div className="flex justify-end gap-2">
         <button
           type="button"

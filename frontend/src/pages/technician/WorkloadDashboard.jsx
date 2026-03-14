@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { technicianWorkload } from "../../services/tickets";
+import Loading from "../../components/Loading";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 function StatCard({ label, value }) {
@@ -38,9 +39,11 @@ export default function WorkloadDashboard() {
       <h1 className="text-xl font-bold text-gray-900 dark:text-white">IT Support Workload Dashboard</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {loading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="card h-24 animate-pulse bg-gray-100 dark:bg-slate-800" />
-            ))
+          ? (
+            <div className="col-span-full card min-h-24 flex items-center justify-center">
+              <Loading />
+            </div>
+          )
           : (
             <>
               <StatCard label="Total Assigned" value={totals.totalAssigned} />
@@ -55,7 +58,9 @@ export default function WorkloadDashboard() {
           Workload comparison (Active tickets)
         </h2>
         {loading ? (
-          <div className="h-80 animate-pulse bg-gray-100 dark:bg-slate-800 rounded-lg" />
+          <div className="h-80 flex items-center justify-center">
+            <Loading />
+          </div>
         ) : (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">

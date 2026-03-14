@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Loading from "../../components/Loading";
 import { listEmployees, createEmployee, toggleUserActive } from "../../services/admin";
 
 export default function EmployeeManagement() {
   const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [msg, setMsg] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [fullName, setFullName] = useState("");
@@ -11,13 +14,24 @@ export default function EmployeeManagement() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((e) => (e.fullName || "").toLowerCase().includes(q));
+  }, [rows, searchQuery]);
+
   async function load() {
-    const res = await listEmployees();
-    setRows(res.employees || []);
+    setLoading(true);
+    try {
+      const res = await listEmployees();
+      setRows(res.employees || []);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    load().catch(() => {});
+    load().catch(() => setLoading(false));
   }, []);
 
   function openModal() {
@@ -65,7 +79,17 @@ export default function EmployeeManagement() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Employee Management</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Employee Management</h1>
+          <input
+            type="search"
+            placeholder="Search by name"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input-field w-full sm:w-64"
+            aria-label="Search employees by name"
+          />
+        </div>
         <button type="button" onClick={openModal} className="btn-primary">
           Add employee
         </button>
@@ -80,6 +104,48 @@ export default function EmployeeManagement() {
         >
           {msg.text}
         </div>
+      )}
+      {loading ? (
+        <div className="card min-h-48 flex items-center justify-center">
+          <Loading />
+        </div>
+      ) : (
+      <div className="card p-5">
+        <ul className="space-y-2">
+          {filteredRows.map((e) => (
+            <li
+              key={e.id}
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border border-gray-200 dark:border-slate-700"
+            >
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white">{e.fullName}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{e.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Active: {e.isActive ? "Yes" : "No"}
+                </p>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => toggleUserActive(e.id, !e.isActive).then(() => load()).catch(() => {})}
+                  className={`text-sm py-1.5 px-3 rounded-lg font-medium ${
+                    e.isActive
+                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 hover:bg-amber-200"
+                      : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200"
+                  }`}
+                >
+                  {e.isActive ? "Deactivate" : "Activate"}
+                </button>
+              </div>
+            </li>
+          ))}
+          {!filteredRows.length && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 py-4">
+              {rows.length ? "No employees match your search." : "No employees."}
+            </p>
+          )}
+        </ul>
+      </div>
       )}
       {modalOpen &&
         createPortal(
@@ -99,7 +165,7 @@ export default function EmployeeManagement() {
               onClick={(e) => e.stopPropagation()}
             >
               <h2 id="add-employee-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add employee</h2>
-              <form onSubmit={onCreate} className="space-y-3">
+              <form onSubmit={onCreate} className="space-y-3" autoComplete="off">
                 <div>
                   <label htmlFor="emp-fullname" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full name (min 2 characters)</label>
                   <input
@@ -110,6 +176,7 @@ export default function EmployeeManagement() {
                     className="input-field w-full"
                     minLength={2}
                     required
+                    autoComplete="off"
                   />
                 </div>
                 <div>
@@ -121,6 +188,7 @@ export default function EmployeeManagement() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="input-field w-full"
                     required
+                    autoComplete="off"
                   />
                 </div>
                 <div>
@@ -133,6 +201,7 @@ export default function EmployeeManagement() {
                     className="input-field w-full"
                     minLength={6}
                     required
+                    autoComplete="new-password"
                   />
                 </div>
                 <div className="flex gap-2 pt-2">
@@ -148,41 +217,6 @@ export default function EmployeeManagement() {
           </>,
           document.getElementById("modal-root") || document.body
         )}
-      <div className="card p-5">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Employees</h2>
-        <ul className="space-y-2">
-          {rows.map((e) => (
-            <li
-              key={e.id}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border border-gray-200 dark:border-slate-700"
-            >
-              <div>
-                <p className="font-semibold text-gray-900 dark:text-white">{e.fullName}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{e.email}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Active: {e.isActive ? "Yes" : "No"}
-                </p>
-              </div>
-              <div>
-                <button
-                  type="button"
-                  onClick={() => toggleUserActive(e.id).then(load)}
-                  className={`text-sm py-1.5 px-3 rounded-lg font-medium ${
-                    e.isActive
-                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 hover:bg-amber-200"
-                      : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200"
-                  }`}
-                >
-                  {e.isActive ? "Deactivate" : "Activate"}
-                </button>
-              </div>
-            </li>
-          ))}
-          {!rows.length && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 py-4">No employees.</p>
-          )}
-        </ul>
-      </div>
     </div>
   );
 }

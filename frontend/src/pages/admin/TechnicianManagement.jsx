@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Loading from "../../components/Loading";
 import {
   createTechnician,
   listTechnicians,
@@ -8,6 +9,8 @@ import {
 
 export default function TechnicianManagement() {
   const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [msg, setMsg] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [fullName, setFullName] = useState("");
@@ -15,13 +18,24 @@ export default function TechnicianManagement() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((t) => (t.fullName || "").toLowerCase().includes(q));
+  }, [rows, searchQuery]);
+
   async function load() {
-    const res = await listTechnicians();
-    setRows(res.technicians || []);
+    setLoading(true);
+    try {
+      const res = await listTechnicians();
+      setRows(res.technicians || []);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    load().catch(() => {});
+    load().catch(() => setLoading(false));
   }, []);
 
   function openModal() {
@@ -68,7 +82,17 @@ export default function TechnicianManagement() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">IT Support Management</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">IT Support Management</h1>
+          <input
+            type="search"
+            placeholder="Search by name"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input-field w-full sm:w-64"
+            aria-label="Search IT support by name"
+          />
+        </div>
         <button type="button" onClick={openModal} className="btn-primary">
           Add IT support
         </button>
@@ -151,10 +175,14 @@ export default function TechnicianManagement() {
           </>,
           document.getElementById("modal-root") || document.body
         )}
+      {loading ? (
+        <div className="card min-h-48 flex items-center justify-center">
+          <Loading />
+        </div>
+      ) : (
       <div className="card p-5">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">IT Supports</h2>
         <ul className="space-y-2">
-          {rows.map((t) => (
+          {filteredRows.map((t) => (
             <li
               key={t.id}
               className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border border-gray-200 dark:border-slate-700"
@@ -181,11 +209,14 @@ export default function TechnicianManagement() {
               </div>
             </li>
           ))}
-          {!rows.length && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 py-4">No IT supports.</p>
+          {!filteredRows.length && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 py-4">
+              {rows.length ? "No IT support matches your search." : "No IT supports."}
+            </p>
           )}
         </ul>
       </div>
+      )}
     </div>
   );
 }

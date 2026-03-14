@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import TicketTable from "../../components/TicketTable";
+import Loading from "../../components/Loading";
 import { listTickets } from "../../services/tickets";
 
 export default function AllTickets() {
@@ -19,7 +20,7 @@ export default function AllTickets() {
       const res = await listTickets({
         page: nextPage,
         limit: 10,
-        q: q || undefined,
+        ticketId: q || undefined,
         status: status || undefined,
         priority: priority || undefined,
       });
@@ -58,7 +59,7 @@ export default function AllTickets() {
         <div className="md:col-span-5">
           <input
             type="search"
-            placeholder="Search"
+            placeholder="Search by ticket ID"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="input-field"
@@ -92,7 +93,9 @@ export default function AllTickets() {
         </div>
       </div>
       {loading ? (
-        <div className="card h-64 animate-pulse bg-gray-100 dark:bg-slate-800" />
+        <div className="card min-h-64 flex items-center justify-center">
+          <Loading />
+        </div>
       ) : (
         <TicketTable title="Tickets" rows={data.items} detailsBasePath="/admin/tickets" />
       )}

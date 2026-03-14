@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Loading from "../../components/Loading";
 import { listActivityLogs } from "../../services/admin";
 
 function formatActorRole(role) {
@@ -110,15 +111,11 @@ export default function ActivityLogs() {
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
             {loading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td className="px-4 py-3"><div className="h-4 w-28 bg-gray-100 dark:bg-slate-800 rounded" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-40 bg-gray-100 dark:bg-slate-800 rounded" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-20 bg-gray-100 dark:bg-slate-800 rounded" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-40 bg-gray-100 dark:bg-slate-800 rounded" /></td>
-                  <td className="px-4 py-3"><div className="h-4 w-64 bg-gray-100 dark:bg-slate-800 rounded" /></td>
-                </tr>
-              ))
+              <tr>
+                <td colSpan={5} className="px-4 py-8">
+                  <Loading />
+                </td>
+              </tr>
             ) : rows.length ? (
               rows.map((r) => (
                 <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">

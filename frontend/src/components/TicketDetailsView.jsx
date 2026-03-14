@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getTicket, addReply, updateStatus, takeTicket } from "../services/tickets";
 import { PriorityChip, StatusChip } from "./TicketChips";
 import TicketTimeline from "./TicketTimeline";
+import Loading from "./Loading";
 import { useAuth } from "../hooks/useAuth";
 import { assignTicket, listTechnicians } from "../services/admin";
 
@@ -102,7 +103,20 @@ export default function TicketDetailsView() {
     if (status !== "RESOLVED" && status !== "NOT_RESOLVED") setStatus("RESOLVED");
   }, [data, user?.role, user?.id, status]);
 
-  if (!data) return null;
+  if (!data) {
+    if (error) {
+      return (
+        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2 text-sm text-red-700 dark:text-red-300">
+          {error}
+        </div>
+      );
+    }
+    return (
+      <div className="card min-h-48 flex items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
 
   const t = data.ticket;
   const isClosed = t.status === "RESOLVED" || t.status === "NOT_RESOLVED";

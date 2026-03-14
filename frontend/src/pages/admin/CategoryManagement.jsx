@@ -1,21 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Loading from "../../components/Loading";
 import { createCategory, listCategories, toggleCategory } from "../../services/admin";
 
 export default function CategoryManagement() {
   const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    const res = await listCategories();
-    setRows(res.categories || []);
+    setLoading(true);
+    try {
+      const res = await listCategories();
+      setRows(res.categories || []);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    load().catch(() => {});
+    load().catch(() => setLoading(false));
   }, []);
 
   function openModal() {
@@ -109,6 +116,11 @@ export default function CategoryManagement() {
           </>,
           document.getElementById("modal-root") || document.body
         )}
+      {loading ? (
+        <div className="card min-h-48 flex items-center justify-center">
+          <Loading />
+        </div>
+      ) : (
       <div className="card p-5">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Categories</h2>
         <ul className="space-y-2">
@@ -135,6 +147,7 @@ export default function CategoryManagement() {
           )}
         </ul>
       </div>
+      )}
     </div>
   );
 }

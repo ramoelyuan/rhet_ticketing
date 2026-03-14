@@ -20,7 +20,7 @@ const createTicketSchema = z.object({
     .default("LOW"),
 });
 
-function buildTicketWhere({ user, q, status, statusGroup, priority, categoryId, technicianId, from, to }) {
+function buildTicketWhere({ user, q, ticketId, status, statusGroup, priority, categoryId, technicianId, from, to }) {
   const where = [];
   const params = [];
   let idx = 1;
@@ -34,7 +34,9 @@ function buildTicketWhere({ user, q, status, statusGroup, priority, categoryId, 
   if (user.role === "EMPLOYEE") add("t.created_by = ?", user.id);
   // Technicians can work on any ticket (no assigned-only filter).
 
-  if (q) {
+  if (ticketId) {
+    add("t.ticket_number::text LIKE ?", `%${ticketId}%`);
+  } else if (q) {
     add("(t.subject ILIKE ? OR t.description ILIKE ?)", `%${q}%`);
     params.push(`%${q}%`);
     idx += 1;
@@ -130,6 +132,7 @@ async function listTickets(req, res, next) {
     const offset = (page - 1) * limit;
 
     const q = (req.query.q || "").trim() || null;
+    const ticketId = (req.query.ticketId || "").trim() || null;
     const status = req.query.status || null;
     const statusGroup = req.query.statusGroup || null;
     const priority = req.query.priority || null;
@@ -141,6 +144,7 @@ async function listTickets(req, res, next) {
     const { whereSql, params } = buildTicketWhere({
       user: req.user,
       q,
+      ticketId,
       status,
       statusGroup,
       priority,

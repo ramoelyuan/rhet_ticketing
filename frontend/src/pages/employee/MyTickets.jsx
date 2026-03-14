@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import TicketTable from "../../components/TicketTable";
+import Loading from "../../components/Loading";
 import { listTickets } from "../../services/tickets";
 
 export default function MyTickets() {
@@ -7,22 +8,28 @@ export default function MyTickets() {
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ items: [], total: 0, limit: 10 });
   const debounceRef = useRef(null);
 
   async function load(nextPage = page) {
-    const res = await listTickets({
-      page: nextPage,
-      limit: 10,
-      q: q || undefined,
-      status: status || undefined,
-      priority: priority || undefined,
-    });
-    setData(res);
+    setLoading(true);
+    try {
+      const res = await listTickets({
+        page: nextPage,
+        limit: 10,
+        q: q || undefined,
+        status: status || undefined,
+        priority: priority || undefined,
+      });
+      setData(res);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    load(1).then(() => setPage(1)).catch(() => {});
+    load(1).then(() => setPage(1)).catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -81,15 +88,18 @@ export default function MyTickets() {
           </select>
         </div>
       </div>
-      {filterEmpty && (
+      {loading ? (
+        <div className="card min-h-64 flex items-center justify-center">
+          <Loading />
+        </div>
+      ) : filterEmpty ? (
         <div className="card px-5 py-8 text-center">
           <p className="text-sm font-medium text-gray-600 dark:text-gray-400">No tickets match your filters.</p>
           <button type="button" onClick={clearFilters} className="mt-3 text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
             Clear filters
           </button>
         </div>
-      )}
-      {!filterEmpty && (
+      ) : (
         <>
           <div className="overflow-x-auto">
             <TicketTable title="Tickets" rows={data.items} detailsBasePath="/employee/tickets" emptyAction={{ label: "Create ticket", to: "/employee/create" }} />
