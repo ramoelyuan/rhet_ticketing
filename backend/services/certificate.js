@@ -7,23 +7,29 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-function getLogoBase64() {
+function getImageBase64(relativePath) {
   const candidates = [
-    path.join(process.cwd(), "frontend", "public", "logo", "rhetlogo.png"),
-    path.join(process.cwd(), "..", "frontend", "public", "logo", "rhetlogo.png"),
-    path.join(__dirname, "..", "..", "frontend", "public", "logo", "rhetlogo.png"),
+    path.join(process.cwd(), "frontend", "public", relativePath),
+    path.join(process.cwd(), "..", "frontend", "public", relativePath),
+    path.join(__dirname, "..", "..", "frontend", "public", relativePath),
   ];
   for (const p of candidates) {
     try {
       if (fs.existsSync(p)) {
         const buf = fs.readFileSync(p);
-        return `data:image/png;base64,${buf.toString("base64")}`;
+        const ext = path.extname(p).toLowerCase();
+        const mime = ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/png";
+        return `data:${mime};base64,${buf.toString("base64")}`;
       }
     } catch {
       // continue
     }
   }
   return null;
+}
+
+function getSupportCertificateBase64() {
+  return getImageBase64("supportcertificate.png");
 }
 
 async function getTopTechnicianForMonth(month, year) {
@@ -64,10 +70,10 @@ async function getTopTechnicianForMonth(month, year) {
 }
 
 function buildCertificateHtml(data) {
-  const logoBase64 = getLogoBase64();
-  const logoImg = logoBase64
-    ? `<img src="${logoBase64}" alt="RHET" class="logo" />`
-    : '<div class="logo-text">RHET</div>';
+  const certBgBase64 = getSupportCertificateBase64();
+  if (!certBgBase64) {
+    throw new Error("Certificate template image not found: frontend/public/supportcertificate.png");
+  }
 
   return `
 <!DOCTYPE html>
@@ -82,152 +88,51 @@ function buildCertificateHtml(data) {
       width: 297mm;
       height: 210mm;
       margin: 0;
-      padding: 15mm;
-      background: #fff;
-      color: #1a1a2e;
       position: relative;
       overflow: hidden;
     }
-    .watermark {
+    .cert-bg {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-18deg);
-      opacity: 0.06;
-      pointer-events: none;
-      font-size: 180px;
-      font-weight: 700;
-      color: #1a1a2e;
-      white-space: nowrap;
-    }
-    .border-frame {
-      position: absolute;
-      inset: 10mm;
-      border: 2px solid #c9a227;
-      border-radius: 4px;
-      pointer-events: none;
-    }
-    .content {
-      position: relative;
-      z-index: 1;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      text-align: center;
-    }
-    .top-section {
+      inset: 0;
       width: 100%;
-    }
-    .logo {
-      height: 52px;
-      width: auto;
-      margin-bottom: 12px;
+      height: 100%;
       object-fit: contain;
+      object-position: center;
     }
-    .logo-text {
-      font-size: 32px;
-      font-weight: 700;
-      letter-spacing: 0.2em;
-      color: #1a365d;
-      margin-bottom: 12px;
-    }
-    .accent-line {
-      width: 120px;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, #c9a227, transparent);
-      margin: 0 auto 16px;
-      border-radius: 2px;
-    }
-    .title {
-      font-size: 28px;
-      font-weight: 700;
-      color: #1a365d;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .middle-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px 0;
+    .overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
     }
     .technician-name {
-      font-size: 36px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 48%;
+      font-size: 44px;
       font-weight: 700;
       color: #1a1a2e;
-      margin-bottom: 8px;
       line-height: 1.2;
-    }
-    .month-year {
-      font-size: 20px;
-      color: #4a5568;
-      margin-bottom: 24px;
-      font-weight: 600;
-    }
-    .accent-line-mid {
-      width: 80px;
-      height: 2px;
-      background: #2563eb;
-      margin: 0 auto 20px;
-      border-radius: 2px;
-    }
-    .award-text {
-      font-size: 16px;
-      line-height: 1.6;
-      color: #2d3748;
-      max-width: 520px;
-      margin-bottom: 16px;
-    }
-    .resolved-count {
-      font-size: 22px;
-      font-weight: 700;
-      color: #1a365d;
-    }
-    .bottom-section {
-      width: 100%;
-      padding-top: 20px;
-    }
-    .signature-line {
-      border-top: 1px solid #2d3748;
-      width: 200px;
-      margin: 0 auto 4px;
-      padding-top: 8px;
-      font-size: 14px;
-      color: #4a5568;
+      text-align: center;
+      text-shadow: 0 1px 2px rgba(255,255,255,0.8);
     }
     .date-issued {
-      font-size: 13px;
-      color: #718096;
+      position: absolute;
+      left: 75%;
+      transform: translateX(-50%);
+      top: 75%;
+      font-size: 22px;
+      color: #2d3748;
+      font-weight: 600;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="watermark" aria-hidden="true">RHET</div>
-  <div class="border-frame" aria-hidden="true"></div>
-  <div class="content">
-    <div class="top-section">
-      ${logoImg}
-      <div class="accent-line"></div>
-      <h1 class="title">IT Support of the Month</h1>
-    </div>
-    <div class="middle-section">
-      <p class="technician-name">${escapeHtml(data.technicianName)}</p>
-      <p class="month-year">${escapeHtml(data.monthYearLabel)}</p>
-      <div class="accent-line-mid"></div>
-      <p class="award-text">
-        This certificate is awarded to <strong>${escapeHtml(data.technicianName)}</strong> in recognition of
-        resolving the highest number of IT support tickets for the month.
-      </p>
-      <p class="resolved-count">${data.resolvedCount} ticket${data.resolvedCount !== 1 ? "s" : ""} resolved</p>
-    </div>
-    <div class="bottom-section">
-      <div class="signature-line">IT Supervisor</div>
-      <p class="date-issued">Date issued: ${escapeHtml(data.dateIssued)}</p>
-    </div>
+  <img src="${certBgBase64}" alt="" class="cert-bg" aria-hidden="true" />
+  <div class="overlay">
+    <p class="technician-name">${escapeHtml(data.technicianName)}</p>
+    <p class="date-issued">${escapeHtml(data.dateIssued)}</p>
   </div>
 </body>
 </html>
