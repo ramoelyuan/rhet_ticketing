@@ -466,6 +466,36 @@ async function reportTechnicianPerformance(req, res, next) {
   }
 }
 
+async function reportTechnicianRankingMonth(req, res, next) {
+  try {
+    const { rows } = await pool.query(
+      `
+      SELECT
+        u.full_name AS technician,
+        COUNT(t.id)::int AS resolved_count
+      FROM users u
+      JOIN technicians tech ON tech.user_id = u.id
+      LEFT JOIN tickets t ON t.assigned_technician_id = u.id
+        AND t.status = 'RESOLVED'
+        AND (t.resolved_at IS NOT NULL OR t.closed_at IS NOT NULL)
+        AND COALESCE(t.resolved_at, t.closed_at) >= date_trunc('month', now())
+        AND COALESCE(t.resolved_at, t.closed_at) < date_trunc('month', now()) + interval '1 month'
+      WHERE u.role = 'TECHNICIAN' AND u.is_active = true
+      GROUP BY u.full_name
+      ORDER BY resolved_count DESC, technician ASC
+      `
+    );
+    const data = rows.map((r, i) => ({
+      rank: i + 1,
+      technician: r.technician,
+      resolvedCount: r.resolved_count,
+    }));
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   listCategories,
   createCategory,
@@ -483,5 +513,6 @@ module.exports = {
   reportCategoryDistribution,
   reportMonthlyTrends,
   reportTechnicianPerformance,
+  reportTechnicianRankingMonth,
 };
 

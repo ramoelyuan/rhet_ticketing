@@ -18,6 +18,7 @@ const {
   reportCategoryDistribution,
   reportMonthlyTrends,
   reportTechnicianPerformance,
+  reportTechnicianRankingMonth,
 } = require("../controllers/adminController");
 
 const router = express.Router();
@@ -46,6 +47,7 @@ router.get("/reports/tickets-per-technician", reportTicketsPerTechnician);
 router.get("/reports/category-distribution", reportCategoryDistribution);
 router.get("/reports/monthly-trends", reportMonthlyTrends);
 router.get("/reports/technician-performance", reportTechnicianPerformance);
+router.get("/reports/technician-ranking-month", reportTechnicianRankingMonth);
 
 module.exports = router;
 

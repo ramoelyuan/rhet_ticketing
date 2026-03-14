@@ -12,6 +12,7 @@ const ticketRoutes = require("./routes/ticketRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const eventsRoutes = require("./routes/eventsRoutes");
+const certificateRoutes = require("./routes/certificateRoutes");
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/events", eventsRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/certificate", certificateRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -1,3 +1,4 @@
+import api from "./api";
 import { apiGet, apiPatch, apiPost } from "./api";
 
 export async function adminDashboard() {
@@ -59,5 +60,22 @@ export async function reportMonthlyTrends() {
 }
 export async function reportTechnicianPerformance() {
   return await apiGet("/api/admin/reports/technician-performance");
+}
+export async function reportTechnicianRankingMonth() {
+  return await apiGet("/api/admin/reports/technician-ranking-month");
+}
+
+export async function getCertificateTechnicianOfTheMonth(month, year) {
+  const res = await api.get("/api/certificate/technician-of-the-month", {
+    params: { month, year },
+    responseType: "blob",
+  });
+  const contentType = res.headers["content-type"] || "";
+  if (contentType.includes("application/json")) {
+    const text = await res.data.text();
+    const data = JSON.parse(text);
+    throw new Error(data.error || "Failed to generate certificate");
+  }
+  return res.data;
 }
 

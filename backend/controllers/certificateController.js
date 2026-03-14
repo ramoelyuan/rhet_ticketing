@@ -1,0 +1,50 @@
+const {
+  getTopTechnicianForMonth,
+  buildCertificateHtml,
+  generatePdf,
+} = require("../services/certificate");
+
+async function getTechnicianOfTheMonthCertificate(req, res, next) {
+  try {
+    const rawMonth = req.query.month;
+    const rawYear = req.query.year;
+    const now = new Date();
+    const month = rawMonth ? String(rawMonth).trim() : String(now.getMonth() + 1);
+    const year = rawYear ? String(rawYear).trim() : String(now.getFullYear());
+
+    const top = await getTopTechnicianForMonth(month, year);
+    if (!top) {
+      return res.status(404).json({
+        error: "No technician with resolved tickets found for the selected month and year.",
+      });
+    }
+
+    const dateIssued = new Date().toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    const html = buildCertificateHtml({
+      technicianName: top.technicianName,
+      monthYearLabel: top.monthYearLabel,
+      resolvedCount: top.resolvedCount,
+      dateIssued,
+    });
+
+    const pdfBuffer = await generatePdf(html);
+
+    const safeMonth = top.monthYearLabel.replace(/\s+/g, "-");
+    const filename = `IT-Support-of-the-Month-${safeMonth}.pdf`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  getTechnicianOfTheMonthCertificate,
+};
