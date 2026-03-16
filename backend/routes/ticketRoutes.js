@@ -5,6 +5,7 @@ const {
   getTicketDetails,
   addReply,
   updateStatus,
+  rateTicket,
   takeTicket,
   technicianWorkload,
 } = require("../controllers/ticketController");
@@ -24,6 +25,7 @@ router.get("/:id", getTicketDetails);
 router.post("/:id/replies", addReply);
 router.post("/:id/take", requireRole("TECHNICIAN", "ADMIN"), takeTicket);
 router.post("/:id/status", requireRole("TECHNICIAN", "ADMIN"), updateStatus);
+router.patch("/:id/rate", requireRole("EMPLOYEE"), rateTicket);
 
 module.exports = router;
 

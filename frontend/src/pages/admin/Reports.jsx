@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import Loading from "../../components/Loading";
 import {
   getCertificateTechnicianOfTheMonth,
+  getCertificateTechnicianOfTheMonthByRating,
   reportCategoryDistribution,
   reportMonthlyTrends,
   reportTechnicianPerformance,
   reportTechnicianRankingMonth,
+  reportTechnicianRatingRankingMonth,
   reportTicketsPerTechnician,
 } from "../../services/admin";
 import {
@@ -38,10 +40,13 @@ export default function Reports() {
   const [monthly, setMonthly] = useState([]);
   const [performance, setPerformance] = useState([]);
   const [rankingMonth, setRankingMonth] = useState([]);
+  const [ratingRankingMonth, setRatingRankingMonth] = useState([]);
   const [certMonth, setCertMonth] = useState(now.getMonth() + 1);
   const [certYear, setCertYear] = useState(now.getFullYear());
   const [certLoading, setCertLoading] = useState(false);
   const [certError, setCertError] = useState(null);
+  const [certRatingLoading, setCertRatingLoading] = useState(false);
+  const [certRatingError, setCertRatingError] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -50,12 +55,14 @@ export default function Reports() {
       reportMonthlyTrends().then((r) => r.data || []).catch(() => []),
       reportTechnicianPerformance().then((r) => r.data || []).catch(() => []),
       reportTechnicianRankingMonth().then((r) => r.data || []).catch(() => []),
-    ]).then(([a, b, c, d, e]) => {
+      reportTechnicianRatingRankingMonth().then((r) => r.data || []).catch(() => []),
+    ]).then(([a, b, c, d, e, f]) => {
       setTicketsPerTech(a);
       setCategoryDist(b);
       setMonthly(c);
       setPerformance(d);
       setRankingMonth(e);
+      setRatingRankingMonth(f);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -90,6 +97,27 @@ export default function Reports() {
       setCertError(err?.message || "Failed to generate certificate");
     } finally {
       setCertLoading(false);
+    }
+  }
+
+  async function handleGenerateCertificateByRating() {
+    setCertRatingError(null);
+    setCertRatingLoading(true);
+    try {
+      const blob = await getCertificateTechnicianOfTheMonthByRating(certMonth, certYear);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `IT-Support-of-the-Month-by-Rating-${MONTH_OPTIONS[certMonth - 1]}-${certYear}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+      setCertRatingError(err?.message || "Failed to generate certificate");
+    } finally {
+      setCertRatingLoading(false);
     }
   }
 
@@ -136,11 +164,22 @@ export default function Reports() {
             disabled={certLoading}
             className="btn-primary"
           >
-            {certLoading ? "Generating…" : "Generate Technician of the Month Certificate"}
+            {certLoading ? "Generating…" : "Generate Certificate (most resolved)"}
+          </button>
+          <button
+            type="button"
+            onClick={handleGenerateCertificateByRating}
+            disabled={certRatingLoading}
+            className="btn-secondary"
+          >
+            {certRatingLoading ? "Generating…" : "Generate Certificate (top rating)"}
           </button>
         </div>
         {certError && (
           <p className="mt-3 text-sm text-red-600 dark:text-red-400">{certError}</p>
+        )}
+        {certRatingError && (
+          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{certRatingError}</p>
         )}
       </div>
       <div className="card p-5">
@@ -172,6 +211,44 @@ export default function Reports() {
                 <span className="font-medium text-gray-900 dark:text-white">{r.technician}</span>
                 <span className="text-sm text-gray-500 dark:text-gray-400 ml-auto">
                   {r.resolvedCount} resolved
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div className="card p-5">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          IT Support ratings (by employee feedback) — {currentMonthLabel}
+        </h2>
+        {ratingRankingMonth.length === 0 ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">No ratings this month yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {ratingRankingMonth.map((r) => (
+              <li
+                key={r.technician}
+                className="flex items-center gap-3 py-2 px-3 rounded-lg border border-gray-200 dark:border-slate-700"
+              >
+                <span
+                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    r.rank === 1
+                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                      : r.rank === 2
+                        ? "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-300"
+                        : r.rank === 3
+                          ? "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300"
+                          : "bg-gray-50 text-gray-600 dark:bg-slate-800 dark:text-gray-400"
+                  }`}
+                >
+                  {r.rank}
+                </span>
+                <span className="font-medium text-gray-900 dark:text-white">{r.technician}</span>
+                <span className="text-sm text-amber-600 dark:text-amber-400 font-semibold ml-auto">
+                  ★ {Number(r.avgRating).toFixed(1)}
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  ({r.ratingCount} rating{r.ratingCount !== 1 ? "s" : ""})
                 </span>
               </li>
             ))}

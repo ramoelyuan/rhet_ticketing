@@ -496,6 +496,49 @@ async function reportTechnicianRankingMonth(req, res, next) {
   }
 }
 
+async function reportTechnicianRatingRankingMonth(req, res, next) {
+  try {
+    const rawMonth = req.query.month;
+    const rawYear = req.query.year;
+    const now = new Date();
+    const year = rawYear ? parseInt(String(rawYear).trim(), 10) : now.getFullYear();
+    const month = rawMonth ? parseInt(String(rawMonth).trim(), 10) : now.getMonth() + 1;
+    if (!month || month < 1 || month > 12 || !year || year < 2000) {
+      return res.json({ data: [] });
+    }
+    const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
+
+    const { rows } = await pool.query(
+      `
+      SELECT
+        u.full_name AS technician,
+        ROUND(AVG(t.employee_rating)::numeric, 2)::float AS avg_rating,
+        COUNT(t.id)::int AS rating_count
+      FROM users u
+      JOIN technicians tech ON tech.user_id = u.id
+      INNER JOIN tickets t ON t.assigned_technician_id = u.id
+        AND t.employee_rating IS NOT NULL
+        AND (t.resolved_at IS NOT NULL OR t.closed_at IS NOT NULL)
+        AND COALESCE(t.resolved_at, t.closed_at) >= $1::date
+        AND COALESCE(t.resolved_at, t.closed_at) < ($1::date + interval '1 month')
+      WHERE u.role = 'TECHNICIAN' AND u.is_active = true
+      GROUP BY u.full_name
+      ORDER BY avg_rating DESC, rating_count DESC, technician ASC
+      `,
+      [monthStart]
+    );
+    const data = rows.map((r, i) => ({
+      rank: i + 1,
+      technician: r.technician,
+      avgRating: r.avg_rating,
+      ratingCount: r.rating_count,
+    }));
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   listCategories,
   createCategory,
@@ -514,5 +557,6 @@ module.exports = {
   reportMonthlyTrends,
   reportTechnicianPerformance,
   reportTechnicianRankingMonth,
+  reportTechnicianRatingRankingMonth,
 };
 

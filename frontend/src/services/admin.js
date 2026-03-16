@@ -64,9 +64,26 @@ export async function reportTechnicianPerformance() {
 export async function reportTechnicianRankingMonth() {
   return await apiGet("/api/admin/reports/technician-ranking-month");
 }
+export async function reportTechnicianRatingRankingMonth(params) {
+  return await apiGet("/api/admin/reports/technician-rating-ranking-month", params);
+}
 
 export async function getCertificateTechnicianOfTheMonth(month, year) {
   const res = await api.get("/api/certificate/technician-of-the-month", {
+    params: { month, year },
+    responseType: "blob",
+  });
+  const contentType = res.headers["content-type"] || "";
+  if (contentType.includes("application/json")) {
+    const text = await res.data.text();
+    const data = JSON.parse(text);
+    throw new Error(data.error || "Failed to generate certificate");
+  }
+  return res.data;
+}
+
+export async function getCertificateTechnicianOfTheMonthByRating(month, year) {
+  const res = await api.get("/api/certificate/technician-of-the-month-by-rating", {
     params: { month, year },
     responseType: "blob",
   });

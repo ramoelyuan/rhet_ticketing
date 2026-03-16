@@ -72,7 +72,9 @@ CREATE TABLE IF NOT EXISTS tickets (
   resolved_at timestamptz,
   closed_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  employee_rating smallint NULL CHECK (employee_rating >= 1 AND employee_rating <= 5),
+  employee_rated_at timestamptz NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_tickets_created_by ON tickets(created_by);

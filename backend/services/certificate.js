@@ -69,6 +69,45 @@ async function getTopTechnicianForMonth(month, year) {
   };
 }
 
+async function getTopTechnicianByRatingForMonth(month, year) {
+  const monthNum = parseInt(month, 10);
+  const yearNum = parseInt(year, 10);
+  if (!monthNum || monthNum < 1 || monthNum > 12 || !yearNum || yearNum < 2000) {
+    return null;
+  }
+  const monthStart = `${yearNum}-${String(monthNum).padStart(2, "0")}-01`;
+  const { rows } = await pool.query(
+    `
+    SELECT
+      u.full_name AS technician,
+      ROUND(AVG(t.employee_rating)::numeric, 2)::float AS avg_rating,
+      COUNT(t.id)::int AS rating_count
+    FROM users u
+    JOIN technicians tech ON tech.user_id = u.id
+    INNER JOIN tickets t ON t.assigned_technician_id = u.id
+      AND t.employee_rating IS NOT NULL
+      AND (t.resolved_at IS NOT NULL OR t.closed_at IS NOT NULL)
+      AND COALESCE(t.resolved_at, t.closed_at) >= $1::date
+      AND COALESCE(t.resolved_at, t.closed_at) < ($1::date + interval '1 month')
+    WHERE u.role = 'TECHNICIAN' AND u.is_active = true
+    GROUP BY u.full_name
+    ORDER BY avg_rating DESC, rating_count DESC, technician ASC
+    LIMIT 1
+    `,
+    [monthStart]
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    technicianName: row.technician,
+    avgRating: row.avg_rating,
+    ratingCount: row.rating_count,
+    monthYearLabel: `${MONTHS[monthNum - 1]} ${yearNum}`,
+    month: monthNum,
+    year: yearNum,
+  };
+}
+
 function buildCertificateHtml(data) {
   const certBgBase64 = getSupportCertificateBase64();
   if (!certBgBase64) {
@@ -180,6 +219,7 @@ async function generatePdf(html) {
 
 module.exports = {
   getTopTechnicianForMonth,
+  getTopTechnicianByRatingForMonth,
   buildCertificateHtml,
   generatePdf,
   MONTHS,

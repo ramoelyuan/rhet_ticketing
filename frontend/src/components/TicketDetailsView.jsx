@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getTicket, addReply, updateStatus, takeTicket } from "../services/tickets";
+import { getTicket, addReply, updateStatus, takeTicket, rateTicket } from "../services/tickets";
 import { PriorityChip, StatusChip } from "./TicketChips";
 import TicketTimeline from "./TicketTimeline";
 import Loading from "./Loading";
@@ -19,6 +19,8 @@ export default function TicketDetailsView() {
   const [techId, setTechId] = useState("");
   const [assignBusy, setAssignBusy] = useState(false);
   const [takeBusy, setTakeBusy] = useState(false);
+  const [rateBusy, setRateBusy] = useState(false);
+  const [hoveredStar, setHoveredStar] = useState(null);
 
   async function load() {
     const res = await getTicket(id);
@@ -89,6 +91,19 @@ export default function TicketDetailsView() {
       setError(e?.response?.data?.error || "Failed to assign technician");
     } finally {
       setAssignBusy(false);
+    }
+  }
+
+  async function submitRating(stars) {
+    setError(null);
+    setRateBusy(true);
+    try {
+      await rateTicket(id, stars);
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.error || "Failed to submit rating");
+    } finally {
+      setRateBusy(false);
     }
   }
 
@@ -243,6 +258,47 @@ export default function TicketDetailsView() {
                   <button type="button" onClick={submitAssign} disabled={assignBusy} className="btn-primary w-full">
                     {assignBusy ? "Saving..." : "Save Assignment"}
                   </button>
+                </>
+              )}
+            </div>
+          )}
+          {user?.role === "EMPLOYEE" && isClosed && t.assignedTechnician && (
+            <div className="card p-5">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Rate IT support</h2>
+              {t.employeeRating != null ? (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  You rated {t.employeeRating} out of 5 stars.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    How was your experience with {t.assignedTechnician.name}?
+                  </p>
+                  <div
+                    className="flex gap-1"
+                    onMouseLeave={() => setHoveredStar(null)}
+                  >
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const highlighted = hoveredStar != null && star <= hoveredStar;
+                      return (
+                        <button
+                          key={star}
+                          type="button"
+                          disabled={rateBusy}
+                          onClick={() => submitRating(star)}
+                          onMouseEnter={() => setHoveredStar(star)}
+                          className="relative p-1 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 inline-flex items-center justify-center w-9 h-9"
+                          title={`${star} star${star !== 1 ? "s" : ""}`}
+                          aria-label={`Rate ${star} star${star !== 1 ? "s" : ""}`}
+                        >
+                          <span className={`text-2xl transition-colors ${highlighted ? "text-amber-400" : "text-gray-300 dark:text-gray-600"}`}>
+                            {highlighted ? "★" : "☆"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {rateBusy && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Submitting…</p>}
                 </>
               )}
             </div>

@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./api";
+import { apiGet, apiPatch, apiPost } from "./api";
 
 export async function listTickets(params) {
   return await apiGet("/api/tickets", params);
@@ -18,6 +18,10 @@ export async function addReply(id, body) {
 
 export async function updateStatus(id, status) {
   return await apiPost(`/api/tickets/${id}/status`, { status });
+}
+
+export async function rateTicket(id, rating) {
+  return await apiPatch(`/api/tickets/${id}/rate`, { rating });
 }
 
 export async function takeTicket(id) {

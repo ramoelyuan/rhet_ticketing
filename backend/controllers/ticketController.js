@@ -304,6 +304,8 @@ async function getTicketDetails(req, res, next) {
         assignedTechnician: ticket.assigned_technician_id
           ? { id: ticket.assigned_technician_id, name: ticket.technician_name }
           : null,
+        employeeRating: ticket.employee_rating ?? null,
+        employeeRatedAt: ticket.employee_rated_at ?? null,
       },
       replies: replyRows.map((r) => ({
         id: r.id,
@@ -470,6 +472,65 @@ async function updateStatus(req, res, next) {
   }
 }
 
+const rateSchema = z.object({
+  rating: z.preprocess((v) => (v != null ? Number(v) : v), z.number().int().min(1).max(5)),
+});
+
+async function rateTicket(req, res, next) {
+  try {
+    const ticketId = req.params.id;
+    const { rating } = rateSchema.parse(req.body);
+
+    let rows;
+    try {
+      const result = await pool.query(
+        "SELECT id, status, created_by, assigned_technician_id, employee_rating FROM tickets WHERE id=$1",
+        [ticketId]
+      );
+      rows = result.rows;
+    } catch (dbErr) {
+      if (dbErr.code === "42703") {
+        return res.status(503).json({
+          error: "Rating feature not set up. Run the database migration: node db/run-sql.js db/migrations/add_employee_rating.sql",
+        });
+      }
+      throw dbErr;
+    }
+
+    const ticket = rows[0];
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    if (req.user.role !== "EMPLOYEE" || ticket.created_by !== req.user.id)
+      return res.status(403).json({ error: "Only the ticket creator can rate this ticket." });
+    if (ticket.status !== "RESOLVED" && ticket.status !== "NOT_RESOLVED")
+      return res.status(400).json({ error: "You can only rate closed tickets." });
+    if (!ticket.assigned_technician_id)
+      return res.status(400).json({ error: "No IT Support was assigned to this ticket." });
+    if (ticket.employee_rating != null)
+      return res.status(400).json({ error: "You have already rated this ticket." });
+
+    try {
+      await pool.query(
+        "UPDATE tickets SET employee_rating=$1, employee_rated_at=now(), updated_at=now() WHERE id=$2",
+        [rating, ticketId]
+      );
+    } catch (dbErr) {
+      if (dbErr.code === "42703") {
+        return res.status(503).json({
+          error: "Rating feature not set up. Run the database migration: node db/run-sql.js db/migrations/add_employee_rating.sql",
+        });
+      }
+      throw dbErr;
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid request", details: err.issues });
+    }
+    next(err);
+  }
+}
+
 async function technicianWorkload(req, res, next) {
   try {
     const { rows } = await pool.query(
@@ -571,6 +632,7 @@ module.exports = {
   getTicketDetails,
   addReply,
   updateStatus,
+  rateTicket,
   takeTicket,
   technicianWorkload,
 };
