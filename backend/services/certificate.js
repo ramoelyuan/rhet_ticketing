@@ -9,10 +9,10 @@ const MONTHS = [
 
 function getImageBase64(relativePath) {
   const candidates = [
+    path.join(__dirname, "..", "assets", relativePath),
     path.join(process.cwd(), "frontend", "public", relativePath),
     path.join(process.cwd(), "..", "frontend", "public", relativePath),
     path.join(__dirname, "..", "..", "frontend", "public", relativePath),
-    path.join(__dirname, "..", "assets", relativePath),
   ];
   for (const p of candidates) {
     try {
@@ -127,7 +127,9 @@ async function getTopTechnicianByRatingForMonth(month, year) {
 function buildCertificateHtml(data) {
   const certBgBase64 = getSupportCertificateBase64();
   if (!certBgBase64) {
-    throw new Error("Certificate template image not found: frontend/public/supportcertificate.png");
+    throw new Error(
+      "Certificate template image not found. Add supportcertificate.png to backend/assets/ or set CERTIFICATE_IMAGE_PATH."
+    );
   }
 
   return `
@@ -214,9 +216,11 @@ async function generatePdf(html) {
       "--disable-gpu",
       "--no-first-run",
       "--no-zygote",
-      "--single-process",
     ],
   };
+  if (process.platform !== "win32") {
+    launchOpts.args.push("--single-process");
+  }
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
     launchOpts.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
   }
@@ -235,8 +239,8 @@ async function generatePdf(html) {
   try {
     const page = await browser.newPage();
     await page.setContent(html, {
-      waitUntil: "networkidle0",
-      timeout: 10000,
+      waitUntil: "load",
+      timeout: 15000,
     });
     const pdfBuffer = await page.pdf({
       format: "A4",
