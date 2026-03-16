@@ -42,6 +42,7 @@ async function getTechnicianOfTheMonthCertificate(req, res, next) {
     res.setHeader("Content-Length", pdfBuffer.length);
     res.send(pdfBuffer);
   } catch (err) {
+    console.error("Error generating technician-of-the-month certificate:", err);
     const message = err.message || "Certificate generation failed";
     if (!res.headersSent) {
       return res.status(500).json({ error: message });
@@ -85,6 +86,7 @@ async function getTechnicianOfTheMonthByRatingCertificate(req, res, next) {
     res.setHeader("Content-Length", pdfBuffer.length);
     res.send(pdfBuffer);
   } catch (err) {
+    console.error("Error generating technician-of-the-month-by-rating certificate:", err);
     const message = err.message || "Certificate generation failed";
     if (!res.headersSent) {
       return res.status(500).json({ error: message });
