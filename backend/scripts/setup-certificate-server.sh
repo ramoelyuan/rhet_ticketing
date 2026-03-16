@@ -6,8 +6,9 @@ set -e
 echo "=== Certificate generation setup for deployed server ==="
 
 echo ""
-echo "1. Installing Chromium and Xvfb..."
+echo "1. Installing Chromium, Xvfb, and Chrome/Chromium dependencies (fixes libnss3.so etc.)..."
 sudo apt-get update -qq
+sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libxshmfence1 xvfb 2>/dev/null || true
 sudo apt-get install -y chromium chromium-sandbox xvfb 2>/dev/null || sudo apt-get install -y chromium-browser xvfb 2>/dev/null || true
 
 CHROMIUM_PATH=""

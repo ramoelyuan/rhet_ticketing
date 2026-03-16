@@ -42,6 +42,40 @@ If you use **systemd**, set `ExecStart` to run under Xvfb (see Step 4 below).
 
 ---
 
+## Error: "libnss3.so: cannot open shared object file"
+
+This means the browser (Puppeteer’s downloaded Chrome or Chromium) is missing system libraries. **Recommended:** use **system Chromium** and set `PUPPETEER_EXECUTABLE_PATH` so the app does not use Puppeteer’s cache.
+
+**Option A – Use system Chromium (recommended)**  
+System Chromium installs with the right dependencies:
+
+```bash
+sudo apt update
+sudo apt install -y chromium chromium-sandbox
+# or: sudo apt install -y chromium-browser
+which chromium
+```
+
+Add to `backend/.env` on the server (use the path from `which`):
+
+```env
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+```
+
+Restart the backend (with `xvfb-run` if needed). Certificate generation will use system Chromium instead of Puppeteer’s Chrome.
+
+**Option B – Keep Puppeteer’s Chrome and install missing libs**  
+If you prefer not to use system Chromium, install the libraries Puppeteer’s Chrome needs:
+
+```bash
+sudo apt update
+sudo apt install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libxshmfence1
+```
+
+Then restart the backend and try again.
+
+---
+
 ## Step 1: Install Chromium on the server
 
 The backend uses Puppeteer to generate PDFs. On Linux servers there is no Chrome by default, so you must install Chromium.
