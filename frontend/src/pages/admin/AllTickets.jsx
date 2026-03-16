@@ -8,6 +8,7 @@ export default function AllTickets() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
+  const [requestedDate, setRequestedDate] = useState("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ items: [], total: 0, limit: 10 });
   const [loading, setLoading] = useState(true);
@@ -17,12 +18,20 @@ export default function AllTickets() {
   async function load(nextPage = page) {
     setLoading(true);
     try {
+      let from;
+      let to;
+      if (requestedDate) {
+        from = `${requestedDate}T00:00:00`;
+        to = `${requestedDate}T23:59:59`;
+      }
       const res = await listTickets({
         page: nextPage,
         limit: 10,
         ticketId: q || undefined,
         status: status || undefined,
         priority: priority || undefined,
+        from,
+        to,
       });
       setData(res);
     } finally {
@@ -50,7 +59,7 @@ export default function AllTickets() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [q, status, priority]);
+  }, [q, status, priority, requestedDate]);
 
   return (
     <div className="space-y-4">
@@ -90,6 +99,15 @@ export default function AllTickets() {
             <option value="HIGH">High</option>
             <option value="URGENT">Urgent</option>
           </select>
+        </div>
+        <div className="md:col-span-2">
+          <input
+            type="date"
+            value={requestedDate}
+            onChange={(e) => setRequestedDate(e.target.value)}
+            className="input-field"
+            aria-label="Filter by requested date"
+          />
         </div>
       </div>
       {loading ? (
