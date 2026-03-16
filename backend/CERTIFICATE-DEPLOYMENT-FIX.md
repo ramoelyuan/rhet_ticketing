@@ -4,6 +4,44 @@ When you click "Generate Certificate" on the admin Reports page in production, i
 
 ---
 
+## Quick fix (run on the deployed server)
+
+**1. SSH into the server** and go to your project (e.g. `cd ~/rhet_ticketing` or wherever the app is deployed).
+
+**2. Install Chromium and Xvfb:**
+```bash
+sudo apt update
+sudo apt install -y chromium chromium-sandbox xvfb
+```
+If that fails, try: `sudo apt install -y chromium-browser xvfb`
+
+**3. Find Chromium path and add to backend `.env`:**
+```bash
+which chromium
+# or: which chromium-browser
+```
+Edit `backend/.env` on the server and add (use the path from `which`):
+```env
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+```
+(Use `/usr/bin/chromium-browser` if that’s what `which` showed.)
+
+**4. Start the backend with a virtual display** so Chromium can run without a real screen:
+```bash
+cd backend
+xvfb-run -a node server.js
+```
+Or if you use `npm start`: `xvfb-run -a npm start`
+
+If you use **PM2**: `xvfb-run -a pm2 start server.js --name backend`  
+If you use **systemd**, set `ExecStart` to run under Xvfb (see Step 4 below).
+
+**5. Ensure the certificate image exists** on the server at `backend/assets/supportcertificate.png` (copy from `frontend/public/supportcertificate.png` if you deploy without it).
+
+**6. Restart the backend** and try **Generate Certificate** again from the app (using the server’s IP). The modal will show the server’s error message if it still fails.
+
+---
+
 ## Step 1: Install Chromium on the server
 
 The backend uses Puppeteer to generate PDFs. On Linux servers there is no Chrome by default, so you must install Chromium.
