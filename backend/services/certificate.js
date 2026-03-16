@@ -1,6 +1,21 @@
 const path = require("path");
 const fs = require("fs");
+const { execSync } = require("child_process");
 const { pool } = require("../config/db");
+
+function findChromiumOnLinux() {
+  const names = ["chromium", "chromium-browser", "google-chrome-stable", "google-chrome"];
+  for (const name of names) {
+    try {
+      const out = execSync(`which ${name} 2>/dev/null`, { encoding: "utf8", timeout: 2000 });
+      const p = out.trim();
+      if (p && fs.existsSync(p)) return p;
+    } catch {
+      // continue
+    }
+  }
+  return null;
+}
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -237,11 +252,17 @@ async function generatePdf(html) {
     candidatePaths.push(resolved);
   }
   if (process.platform === "linux") {
-    candidatePaths.push("/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome-stable", "/usr/bin/google-chrome");
+    const fromWhich = findChromiumOnLinux();
+    if (fromWhich) candidatePaths.push(fromWhich);
+    candidatePaths.push("/usr/bin/chromium", "/usr/bin/chromium-browser", "/snap/bin/chromium", "/usr/bin/google-chrome-stable", "/usr/bin/google-chrome");
   }
   for (const p of candidatePaths) {
     if (p && fs.existsSync(p)) {
-      launchOpts.executablePath = p;
+      try {
+        launchOpts.executablePath = fs.realpathSync(p);
+      } catch {
+        launchOpts.executablePath = p;
+      }
       break;
     }
   }
