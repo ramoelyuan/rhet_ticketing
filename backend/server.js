@@ -35,8 +35,7 @@ app.use("/api/certificate", certificateRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-const host = process.env.HOST || "0.0.0.0";
-app.listen(env.port, host, () => {
-  console.log(`Backend listening on http://${host}:${env.port}`);
+app.listen(env.port, () => {
+  console.log(`Backend listening on http://localhost:${env.port}`);
 });
 

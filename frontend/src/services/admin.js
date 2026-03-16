@@ -68,30 +68,11 @@ export async function reportTechnicianRatingRankingMonth(params) {
   return await apiGet("/api/admin/reports/technician-rating-ranking-month", params);
 }
 
-async function parseCertificateError(res) {
-  const contentType = res.headers["content-type"] || "";
-  if (contentType.includes("application/json") || res.status !== 200) {
-    const text = typeof res.data?.text === "function" ? await res.data.text() : String(res.data || "");
-    try {
-      const data = JSON.parse(text);
-      return data.error || "Failed to generate certificate";
-    } catch {
-      return res.status === 500 ? "Server error (check backend logs)" : "Failed to generate certificate";
-    }
-  }
-  return null;
-}
-
 export async function getCertificateTechnicianOfTheMonth(month, year) {
   const res = await api.get("/api/certificate/technician-of-the-month", {
     params: { month, year },
     responseType: "blob",
-    validateStatus: () => true,
   });
-  if (res.status !== 200) {
-    const msg = await parseCertificateError(res);
-    throw new Error(msg);
-  }
   const contentType = res.headers["content-type"] || "";
   if (contentType.includes("application/json")) {
     const text = await res.data.text();
@@ -105,12 +86,7 @@ export async function getCertificateTechnicianOfTheMonthByRating(month, year) {
   const res = await api.get("/api/certificate/technician-of-the-month-by-rating", {
     params: { month, year },
     responseType: "blob",
-    validateStatus: () => true,
   });
-  if (res.status !== 200) {
-    const msg = await parseCertificateError(res);
-    throw new Error(msg);
-  }
   const contentType = res.headers["content-type"] || "";
   if (contentType.includes("application/json")) {
     const text = await res.data.text();

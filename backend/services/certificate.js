@@ -1,21 +1,6 @@
 const path = require("path");
 const fs = require("fs");
-const { execSync } = require("child_process");
 const { pool } = require("../config/db");
-
-function findChromiumOnLinux() {
-  const names = ["chromium", "chromium-browser", "google-chrome-stable", "google-chrome"];
-  for (const name of names) {
-    try {
-      const out = execSync(`which ${name} 2>/dev/null`, { encoding: "utf8", timeout: 2000 });
-      const p = out.trim();
-      if (p && fs.existsSync(p)) return p;
-    } catch {
-      // continue
-    }
-  }
-  return null;
-}
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -24,10 +9,10 @@ const MONTHS = [
 
 function getImageBase64(relativePath) {
   const candidates = [
-    path.join(__dirname, "..", "assets", relativePath),
     path.join(process.cwd(), "frontend", "public", relativePath),
     path.join(process.cwd(), "..", "frontend", "public", relativePath),
     path.join(__dirname, "..", "..", "frontend", "public", relativePath),
+    path.join(__dirname, "..", "assets", relativePath),
   ];
   for (const p of candidates) {
     try {
@@ -142,9 +127,7 @@ async function getTopTechnicianByRatingForMonth(month, year) {
 function buildCertificateHtml(data) {
   const certBgBase64 = getSupportCertificateBase64();
   if (!certBgBase64) {
-    throw new Error(
-      "Certificate template image not found. Add supportcertificate.png to backend/assets/ or set CERTIFICATE_IMAGE_PATH."
-    );
+    throw new Error("Certificate template image not found: frontend/public/supportcertificate.png");
   }
 
   return `
@@ -221,13 +204,6 @@ function escapeHtml(s) {
 }
 
 async function generatePdf(html) {
-  const configuredPath = process.env.PUPPETEER_EXECUTABLE_PATH;
-  if (process.platform === "win32" && configuredPath) {
-    const resolved = path.isAbsolute(configuredPath) ? configuredPath : path.join(process.cwd(), configuredPath);
-    if (!fs.existsSync(resolved)) {
-      delete process.env.PUPPETEER_EXECUTABLE_PATH;
-    }
-  }
   const puppeteer = require("puppeteer");
   const launchOpts = {
     headless: true,
@@ -238,80 +214,29 @@ async function generatePdf(html) {
       "--disable-gpu",
       "--no-first-run",
       "--no-zygote",
+      "--single-process",
     ],
   };
-  if (process.platform !== "win32") {
-    launchOpts.args.push("--single-process");
-    launchOpts.args.push("--ozone-platform=headless");
-    launchOpts.args.push("--headless=new");
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    launchOpts.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
   }
-  const envPath = process.env.PUPPETEER_EXECUTABLE_PATH;
-  const candidatePaths = [];
-  if (envPath) {
-    const resolved = path.isAbsolute(envPath) ? envPath : path.join(process.cwd(), envPath);
-    candidatePaths.push(resolved);
-  }
-  if (process.platform === "linux") {
-    const fromWhich = findChromiumOnLinux();
-    if (fromWhich) candidatePaths.push(fromWhich);
-    candidatePaths.push("/usr/bin/chromium", "/usr/bin/chromium-browser", "/snap/bin/chromium", "/usr/bin/google-chrome-stable", "/usr/bin/google-chrome");
-  }
-  for (const p of candidatePaths) {
-    if (p && fs.existsSync(p)) {
-      try {
-        launchOpts.executablePath = fs.realpathSync(p);
-      } catch {
-        launchOpts.executablePath = p;
-      }
-      break;
-    }
-  }
-  let savedPuppeteerPath;
-  if (!launchOpts.executablePath && process.platform === "win32") {
-    savedPuppeteerPath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    delete process.env.PUPPETEER_EXECUTABLE_PATH;
-  } else if (!launchOpts.executablePath) {
-    launchOpts.executablePath = puppeteer.executablePath();
-  }
-
   let browser;
   try {
     browser = await puppeteer.launch(launchOpts);
   } catch (launchErr) {
     const msg = launchErr.message || String(launchErr);
-    const notFoundAtPath = /not found at the configured executablePath|Browser was not found|no executable was found/i.test(msg);
-    if (notFoundAtPath && process.platform === "win32") {
-      throw new Error(
-        "PDF generation failed: PUPPETEER_EXECUTABLE_PATH in .env is set to a Linux path (/usr/bin/chromium). " +
-        "On Windows, remove or comment out PUPPETEER_EXECUTABLE_PATH in backend/.env so the app uses Puppeteer's bundled Chrome."
-      );
-    }
-    if (notFoundAtPath && process.platform !== "win32") {
-      throw new Error(
-        "Chromium not found. On this server run: sudo apt update && sudo apt install -y chromium (or chromium-browser). " +
-        "Then run: which chromium and set PUPPETEER_EXECUTABLE_PATH in .env to that path. " +
-        "Or remove PUPPETEER_EXECUTABLE_PATH from .env if you want to use another browser."
-      );
-    }
-    const needsDisplay = /Missing X server|\$DISPLAY|platform failed to initialize|ozone_platform_x11/i.test(msg);
-    if (needsDisplay && process.platform !== "win32") {
-      throw new Error(
-        "PDF generation failed: browser needs a display. Start the backend with: xvfb-run -a node server.js (after: apt install xvfb)."
-      );
-    }
     throw new Error(
-      "PDF generation failed: could not start browser. Details: " + msg
+      "PDF generation failed: could not start browser. " +
+      "On Linux servers (e.g. Proxmox), install Chromium: apt install -y chromium-browser (or chromium), " +
+      "then set env PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium (or /usr/bin/chromium-browser). " +
+      "Details: " + msg
     );
-  } finally {
-    if (savedPuppeteerPath !== undefined) {
-      process.env.PUPPETEER_EXECUTABLE_PATH = savedPuppeteerPath;
-    }
   }
   try {
     const page = await browser.newPage();
     await page.setContent(html, {
-      waitUntil: "load",
-      timeout: 15000,
+      waitUntil: "networkidle0",
+      timeout: 10000,
     });
     const pdfBuffer = await page.pdf({
       format: "A4",
