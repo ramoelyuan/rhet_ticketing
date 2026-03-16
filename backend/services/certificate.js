@@ -220,6 +220,8 @@ async function generatePdf(html) {
   };
   if (process.platform !== "win32") {
     launchOpts.args.push("--single-process");
+    launchOpts.args.push("--ozone-platform=headless");
+    launchOpts.args.push("--headless=new");
   }
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
     launchOpts.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;

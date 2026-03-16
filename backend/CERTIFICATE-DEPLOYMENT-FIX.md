@@ -90,17 +90,46 @@ If your deploy copies the whole repo (including `frontend/public/supportcertific
 
 ---
 
-## Step 4: Restart the backend and test
+## Step 4: Fix "Missing X server or $DISPLAY" (Linux headless)
+
+If Chromium fails with **"Missing X server or $DISPLAY"** or **"The platform failed to initialize"**, the server has no graphical display. The backend now launches Chromium with `--ozone-platform=headless` and `--headless=new` so it does not need an X server. **Redeploy or restart the backend** so it uses the updated code.
+
+If it still fails (e.g. older Chromium that does not support these flags), use a **virtual display** with Xvfb:
+
+```bash
+sudo apt install -y xvfb
+```
+
+Then start your backend under Xvfb, for example:
+
+```bash
+xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node server.js
+```
+
+Or with systemd, set the service to run under Xvfb:
+
+```ini
+[Service]
+Environment="DISPLAY=:99"
+ExecStartPre=/usr/bin/Xvfb :99 -screen 0 1920x1080x24 -ac &
+ExecStart=/usr/bin/node server.js
+```
+
+Or run the whole app with: `xvfb-run -a npm start` (from the backend directory).
+
+---
+
+## Step 5: Restart the backend and test
 
 1. Restart the backend process (e.g. `sudo systemctl restart your-backend` or restart your Node/PM2 process).
 2. Log in as admin → Reports & Analytics → choose month/year → Generate Certificate → pick one of the two certificate types.
 3. If it still fails, check the backend logs; the server often returns a message like:
-   - "could not start browser" → Chromium not installed or wrong `PUPPETEER_EXECUTABLE_PATH`.
+   - "could not start browser" → Chromium not installed or wrong `PUPPETEER_EXECUTABLE_PATH`; or use Xvfb (Step 4).
    - "Certificate template image not found" → set `CERTIFICATE_IMAGE_PATH` correctly (Step 3).
 
 ---
 
-## Step 5: If Chromium still fails (optional)
+## Step 6: If Chromium still fails (optional)
 
 Some environments need extra flags or a different browser. The code already uses:
 
@@ -117,9 +146,9 @@ If you see a launch error even with the correct `PUPPETEER_EXECUTABLE_PATH`, try
    sudo apt install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2
    ```
 
-2. **Run Chromium once manually** to see if it starts:
+2. **Run Chromium once manually** with headless flags (no X server):
    ```bash
-   /usr/bin/chromium --headless --no-sandbox --dump-dom https://example.com
+   /usr/bin/chromium --headless=new --ozone-platform=headless --no-sandbox --dump-dom https://example.com
    ```
    If this fails, fix Chromium/dependencies first; then the app will work.
 
