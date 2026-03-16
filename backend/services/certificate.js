@@ -206,6 +206,13 @@ function escapeHtml(s) {
 }
 
 async function generatePdf(html) {
+  const configuredPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  if (process.platform === "win32" && configuredPath) {
+    const resolved = path.isAbsolute(configuredPath) ? configuredPath : path.join(process.cwd(), configuredPath);
+    if (!fs.existsSync(resolved)) {
+      delete process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+  }
   const puppeteer = require("puppeteer");
   const launchOpts = {
     headless: true,
@@ -223,10 +230,10 @@ async function generatePdf(html) {
     launchOpts.args.push("--ozone-platform=headless");
     launchOpts.args.push("--headless=new");
   }
-  const configuredPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  const envPath = process.env.PUPPETEER_EXECUTABLE_PATH;
   const candidatePaths = [];
-  if (configuredPath) {
-    const resolved = path.isAbsolute(configuredPath) ? configuredPath : path.join(process.cwd(), configuredPath);
+  if (envPath) {
+    const resolved = path.isAbsolute(envPath) ? envPath : path.join(process.cwd(), envPath);
     candidatePaths.push(resolved);
   }
   if (process.platform === "linux") {
@@ -238,18 +245,31 @@ async function generatePdf(html) {
       break;
     }
   }
+  let savedPuppeteerPath;
+  if (!launchOpts.executablePath && process.platform === "win32") {
+    savedPuppeteerPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    delete process.env.PUPPETEER_EXECUTABLE_PATH;
+  } else if (!launchOpts.executablePath) {
+    launchOpts.executablePath = puppeteer.executablePath();
+  }
 
   let browser;
   try {
     browser = await puppeteer.launch(launchOpts);
   } catch (launchErr) {
     const msg = launchErr.message || String(launchErr);
-    const notFoundAtPath = /not found at the configured executablePath|Browser was not found/i.test(msg);
+    const notFoundAtPath = /not found at the configured executablePath|Browser was not found|no executable was found/i.test(msg);
+    if (notFoundAtPath && process.platform === "win32") {
+      throw new Error(
+        "PDF generation failed: PUPPETEER_EXECUTABLE_PATH in .env is set to a Linux path (/usr/bin/chromium). " +
+        "On Windows, remove or comment out PUPPETEER_EXECUTABLE_PATH in backend/.env so the app uses Puppeteer's bundled Chrome."
+      );
+    }
     if (notFoundAtPath && process.platform !== "win32") {
       throw new Error(
         "Chromium not found. On this server run: sudo apt update && sudo apt install -y chromium (or chromium-browser). " +
-        "Then run: which chromium (or which chromium-browser) and set PUPPETEER_EXECUTABLE_PATH in .env to that path, e.g. /usr/bin/chromium. " +
-        "If Chromium is already installed, set PUPPETEER_EXECUTABLE_PATH to the path returned by 'which chromium'."
+        "Then run: which chromium and set PUPPETEER_EXECUTABLE_PATH in .env to that path. " +
+        "Or remove PUPPETEER_EXECUTABLE_PATH from .env if you want to use another browser."
       );
     }
     const needsDisplay = /Missing X server|\$DISPLAY|platform failed to initialize|ozone_platform_x11/i.test(msg);
@@ -259,8 +279,12 @@ async function generatePdf(html) {
       );
     }
     throw new Error(
-      "PDF generation failed: could not start browser. On Linux: apt install chromium, set PUPPETEER_EXECUTABLE_PATH to the path from 'which chromium'. Details: " + msg
+      "PDF generation failed: could not start browser. Details: " + msg
     );
+  } finally {
+    if (savedPuppeteerPath !== undefined) {
+      process.env.PUPPETEER_EXECUTABLE_PATH = savedPuppeteerPath;
+    }
   }
   try {
     const page = await browser.newPage();
