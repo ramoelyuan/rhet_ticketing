@@ -12,6 +12,7 @@ function getImageBase64(relativePath) {
     path.join(process.cwd(), "frontend", "public", relativePath),
     path.join(process.cwd(), "..", "frontend", "public", relativePath),
     path.join(__dirname, "..", "..", "frontend", "public", relativePath),
+    path.join(__dirname, "..", "assets", relativePath),
   ];
   for (const p of candidates) {
     try {
@@ -29,6 +30,21 @@ function getImageBase64(relativePath) {
 }
 
 function getSupportCertificateBase64() {
+  if (process.env.CERTIFICATE_IMAGE_PATH) {
+    const p = path.isAbsolute(process.env.CERTIFICATE_IMAGE_PATH)
+      ? process.env.CERTIFICATE_IMAGE_PATH
+      : path.join(process.cwd(), process.env.CERTIFICATE_IMAGE_PATH);
+    if (fs.existsSync(p)) {
+      try {
+        const buf = fs.readFileSync(p);
+        const ext = path.extname(p).toLowerCase();
+        const mime = ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : "image/png";
+        return `data:${mime};base64,${buf.toString("base64")}`;
+      } catch {
+        // fall through to getImageBase64
+      }
+    }
+  }
   return getImageBase64("supportcertificate.png");
 }
 
@@ -189,10 +205,33 @@ function escapeHtml(s) {
 
 async function generatePdf(html) {
   const puppeteer = require("puppeteer");
-  const browser = await puppeteer.launch({
+  const launchOpts = {
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--no-first-run",
+      "--no-zygote",
+      "--single-process",
+    ],
+  };
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    launchOpts.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  let browser;
+  try {
+    browser = await puppeteer.launch(launchOpts);
+  } catch (launchErr) {
+    const msg = launchErr.message || String(launchErr);
+    throw new Error(
+      "PDF generation failed: could not start browser. " +
+      "On Linux servers (e.g. Proxmox), install Chromium: apt install -y chromium-browser (or chromium), " +
+      "then set env PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium (or /usr/bin/chromium-browser). " +
+      "Details: " + msg
+    );
+  }
   try {
     const page = await browser.newPage();
     await page.setContent(html, {

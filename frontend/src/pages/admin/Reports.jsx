@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Loading from "../../components/Loading";
 import {
   getCertificateTechnicianOfTheMonth,
@@ -43,6 +44,7 @@ export default function Reports() {
   const [ratingRankingMonth, setRatingRankingMonth] = useState([]);
   const [certMonth, setCertMonth] = useState(now.getMonth() + 1);
   const [certYear, setCertYear] = useState(now.getFullYear());
+  const [certModalOpen, setCertModalOpen] = useState(false);
   const [certLoading, setCertLoading] = useState(false);
   const [certError, setCertError] = useState(null);
   const [certRatingLoading, setCertRatingLoading] = useState(false);
@@ -79,6 +81,12 @@ export default function Reports() {
 
   const currentMonthLabel = new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
+  function openCertModal() {
+    setCertError(null);
+    setCertRatingError(null);
+    setCertModalOpen(true);
+  }
+
   async function handleGenerateCertificate() {
     setCertError(null);
     setCertLoading(true);
@@ -93,6 +101,7 @@ export default function Reports() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 10000);
+      setCertModalOpen(false);
     } catch (err) {
       setCertError(err?.message || "Failed to generate certificate");
     } finally {
@@ -114,6 +123,7 @@ export default function Reports() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 10000);
+      setCertModalOpen(false);
     } catch (err) {
       setCertRatingError(err?.message || "Failed to generate certificate");
     } finally {
@@ -160,28 +170,57 @@ export default function Reports() {
           </div>
           <button
             type="button"
-            onClick={handleGenerateCertificate}
-            disabled={certLoading}
+            onClick={openCertModal}
             className="btn-primary"
           >
-            {certLoading ? "Generating…" : "Generate Certificate (most resolved)"}
-          </button>
-          <button
-            type="button"
-            onClick={handleGenerateCertificateByRating}
-            disabled={certRatingLoading}
-            className="btn-secondary"
-          >
-            {certRatingLoading ? "Generating…" : "Generate Certificate (top rating)"}
+            Generate Certificate
           </button>
         </div>
-        {certError && (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{certError}</p>
-        )}
-        {certRatingError && (
-          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{certRatingError}</p>
-        )}
       </div>
+      {certModalOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => !certLoading && !certRatingLoading && setCertModalOpen(false)}>
+            <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-5" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Choose certificate type</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                For {MONTH_OPTIONS[certMonth - 1]} {certYear}
+              </p>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleGenerateCertificate}
+                  disabled={certLoading || certRatingLoading}
+                  className="w-full py-3 px-4 rounded-lg border border-gray-200 dark:border-slate-600 text-left font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50"
+                >
+                  {certLoading ? "Generating…" : "Technician of the Month (most resolved)"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateCertificateByRating}
+                  disabled={certLoading || certRatingLoading}
+                  className="w-full py-3 px-4 rounded-lg border border-gray-200 dark:border-slate-600 text-left font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50"
+                >
+                  {certRatingLoading ? "Generating…" : "Technician of the Month (top rating)"}
+                </button>
+              </div>
+              {certError && (
+                <p className="mt-3 text-sm text-red-600 dark:text-red-400">{certError}</p>
+              )}
+              {certRatingError && (
+                <p className="mt-3 text-sm text-red-600 dark:text-red-400">{certRatingError}</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setCertModalOpen(false)}
+                disabled={certLoading || certRatingLoading}
+                className="mt-4 w-full py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>,
+          document.getElementById("modal-root") || document.body
+        )}
       <div className="card p-5">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           IT Support rankings — {currentMonthLabel}
