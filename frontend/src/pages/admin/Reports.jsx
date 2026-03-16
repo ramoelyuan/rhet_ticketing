@@ -299,8 +299,8 @@ export default function Reports() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Tickets per technician
           </h2>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-80 min-h-[300px] w-full">
+            <ResponsiveContainer width="100%" height={320}>
               <BarChart data={ticketsPerTech}>
                 <XAxis dataKey="technician" tick={{ fontSize: 12 }} />
                 <YAxis allowDecimals={false} />
@@ -314,8 +314,8 @@ export default function Reports() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Categories distribution
           </h2>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-80 min-h-[300px] w-full">
+            <ResponsiveContainer width="100%" height={320}>
               <PieChart>
                 <Pie
                   data={categoryDist}
@@ -338,8 +338,8 @@ export default function Reports() {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Monthly ticket trends (last 12 months)
         </h2>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-80 min-h-[300px] w-full">
+          <ResponsiveContainer width="100%" height={320}>
             <LineChart data={monthly}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-slate-700" />
               <XAxis dataKey="month" />
@@ -354,8 +354,8 @@ export default function Reports() {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           IT support performance (resolved)
         </h2>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-80 min-h-[300px] w-full">
+          <ResponsiveContainer width="100%" height={320}>
             <BarChart data={performance}>
               <XAxis dataKey="technician" tick={{ fontSize: 12 }} />
               <YAxis allowDecimals={false} />

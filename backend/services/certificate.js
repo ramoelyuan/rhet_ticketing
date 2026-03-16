@@ -223,19 +223,43 @@ async function generatePdf(html) {
     launchOpts.args.push("--ozone-platform=headless");
     launchOpts.args.push("--headless=new");
   }
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    launchOpts.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  const configuredPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  const candidatePaths = [];
+  if (configuredPath) {
+    const resolved = path.isAbsolute(configuredPath) ? configuredPath : path.join(process.cwd(), configuredPath);
+    candidatePaths.push(resolved);
   }
+  if (process.platform === "linux") {
+    candidatePaths.push("/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/google-chrome-stable", "/usr/bin/google-chrome");
+  }
+  for (const p of candidatePaths) {
+    if (p && fs.existsSync(p)) {
+      launchOpts.executablePath = p;
+      break;
+    }
+  }
+
   let browser;
   try {
     browser = await puppeteer.launch(launchOpts);
   } catch (launchErr) {
     const msg = launchErr.message || String(launchErr);
+    const notFoundAtPath = /not found at the configured executablePath|Browser was not found/i.test(msg);
+    if (notFoundAtPath && process.platform !== "win32") {
+      throw new Error(
+        "Chromium not found. On this server run: sudo apt update && sudo apt install -y chromium (or chromium-browser). " +
+        "Then run: which chromium (or which chromium-browser) and set PUPPETEER_EXECUTABLE_PATH in .env to that path, e.g. /usr/bin/chromium. " +
+        "If Chromium is already installed, set PUPPETEER_EXECUTABLE_PATH to the path returned by 'which chromium'."
+      );
+    }
+    const needsDisplay = /Missing X server|\$DISPLAY|platform failed to initialize|ozone_platform_x11/i.test(msg);
+    if (needsDisplay && process.platform !== "win32") {
+      throw new Error(
+        "PDF generation failed: browser needs a display. Start the backend with: xvfb-run -a node server.js (after: apt install xvfb)."
+      );
+    }
     throw new Error(
-      "PDF generation failed: could not start browser. " +
-      "On Linux servers (e.g. Proxmox), install Chromium: apt install -y chromium-browser (or chromium), " +
-      "then set env PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium (or /usr/bin/chromium-browser). " +
-      "Details: " + msg
+      "PDF generation failed: could not start browser. On Linux: apt install chromium, set PUPPETEER_EXECUTABLE_PATH to the path from 'which chromium'. Details: " + msg
     );
   }
   try {
