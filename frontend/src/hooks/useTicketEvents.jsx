@@ -1,7 +1,14 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "./useAuth";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+function getApiBaseURL() {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    return `${window.location.protocol}//${window.location.hostname}:5000`;
+  }
+  return "http://localhost:5000";
+}
+const API_BASE = getApiBaseURL();
 
 /**
  * Subscribe to real-time new-ticket events (SSE). When an employee creates a ticket,
