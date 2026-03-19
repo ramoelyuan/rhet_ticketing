@@ -217,8 +217,12 @@ async function generatePdf(html) {
       "--single-process",
     ],
   };
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    launchOpts.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  const envPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  if (envPath) {
+    const resolved = path.isAbsolute(envPath) ? envPath : path.join(process.cwd(), envPath);
+    if (fs.existsSync(resolved)) {
+      launchOpts.executablePath = resolved;
+    }
   }
   let browser;
   try {

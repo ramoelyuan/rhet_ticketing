@@ -19,10 +19,7 @@ router.get("/", async (req, res, next) => {
     const user = rows[0];
     if (!user || !user.is_active) return res.status(401).json({ error: "Invalid user" });
 
-    const role = user.role;
-    if (role !== "TECHNICIAN" && role !== "ADMIN") {
-      return res.status(403).json({ error: "Events only for IT Support and Admin" });
-    }
+    // All roles can connect; server only pushes allowed/targeted events.
 
     const userInfo = {
       id: user.id,

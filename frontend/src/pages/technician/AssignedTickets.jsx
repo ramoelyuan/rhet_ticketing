@@ -40,9 +40,8 @@ export default function AssignedTickets() {
     }
   }
 
-  useTicketEvents(() => {
-    load(1).then(() => setPage(1)).catch(() => {});
-  });
+  const refetch = () => load(1).then(() => setPage(1)).catch(() => {});
+  useTicketEvents(refetch, refetch);
 
   useEffect(() => {
     const initialQ = searchParams.get("q") || "";

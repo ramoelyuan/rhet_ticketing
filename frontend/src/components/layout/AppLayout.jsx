@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { useAuth } from "../../hooks/useAuth";
 import { listTickets } from "../../services/tickets";
 import { adminDashboard } from "../../services/admin";
+import { useTicketEvents } from "../../hooks/useTicketEvents";
 import {
   Squares2X2Icon,
   TicketIcon,
@@ -18,6 +19,7 @@ import {
 
 export default function AppLayout({ children }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const [desktopSidebarExpanded, setDesktopSidebarExpanded] = useState(false);
@@ -25,9 +27,19 @@ export default function AppLayout({ children }) {
   const [uiHidden, setUiHidden] = useState(false);
   const idleTimer = useRef(null);
   const notificationAudioRef = useRef(null);
+  const notificationAudioAltRef = useRef(null);
   const audioUnlockedRef = useRef(false);
   const audioCtxRef = useRef(null);
   const lastOpenTotalRef = useRef(null);
+  const playNotifyRef = useRef(() => {});
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = useRef(null);
+
+  function showToast(next) {
+    setToast(next);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 7000);
+  }
 
   useEffect(() => {
     function clearTimer() {
@@ -70,7 +82,8 @@ export default function AppLayout({ children }) {
     if (!user) return;
     // Admin dashboard handles its own synchronized notifications.
     if (user.role === "ADMIN") return;
-    if (user.role !== "TECHNICIAN") return;
+    // Needed for TECHNICIAN + EMPLOYEE (message notifications).
+    if (user.role !== "TECHNICIAN" && user.role !== "EMPLOYEE") return;
 
     if (!notificationAudioRef.current) {
       const base = (import.meta?.env?.BASE_URL || "/").replace(/\/?$/, "/");
@@ -78,6 +91,7 @@ export default function AppLayout({ children }) {
       a.preload = "auto";
       a.volume = 1.0;
       notificationAudioRef.current = a;
+      notificationAudioAltRef.current = new Audio(`${base}soundeffect/notificationsound.mp3`);
     }
 
     function ensureAudioCtx() {
@@ -143,29 +157,23 @@ export default function AppLayout({ children }) {
     }
 
     async function playNotification() {
-      const a = notificationAudioRef.current;
-      if (!a) return;
       if (!audioUnlockedRef.current) return;
+      const url = notificationAudioRef.current?.src;
+      const urlAlt = notificationAudioAltRef.current?.src;
       try {
-        a.pause();
-        a.currentTime = 0;
-        a.volume = 1.0;
-        await a.play();
-        // Replay quickly to make it more noticeable.
-        setTimeout(() => {
-          try {
-            a.pause();
-            a.currentTime = 0;
-            a.volume = 1.0;
-            a.play().catch(() => {});
-          } catch {
-            // ignore
-          }
-        }, 250);
+        const tryPlay = (src) => {
+          if (!src) return Promise.reject();
+          const a = new Audio(src);
+          a.volume = 1.0;
+          return a.play();
+        };
+        await tryPlay(url).catch(() => (urlAlt ? tryPlay(urlAlt) : Promise.reject()));
       } catch {
         fallbackBeep(3);
       }
     }
+
+    playNotifyRef.current = playNotification;
 
     const unlockEvents = ["pointerdown", "keydown", "touchstart"];
     unlockEvents.forEach((ev) => window.addEventListener(ev, unlockAudio, { passive: true }));
@@ -197,6 +205,36 @@ export default function AppLayout({ children }) {
       unlockEvents.forEach((ev) => window.removeEventListener(ev, unlockAudio, { passive: true }));
     };
   }, [user]);
+
+  // Message notifications (sound + popup) for active tickets.
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  useTicketEvents(
+    () => {
+      // Live: new open ticket created (IT Support only), play instantly like Admin Dashboard.
+      if (user?.role === "TECHNICIAN") {
+        playNotifyRef.current?.();
+      }
+    },
+    undefined,
+    (payload) => {
+      if (!user) return;
+      // Only requested for IT Support and Employees.
+      if (user.role === "EMPLOYEE" || user.role === "TECHNICIAN") {
+        playNotifyRef.current?.();
+      }
+
+      const ticketId = payload.ticketId;
+      const ticketNumber = payload.ticketNumber;
+      const fromName = payload.fromName;
+      const messagePreview = payload.messagePreview;
+      showToast({ ticketId, ticketNumber, fromName, messagePreview });
+    }
+  );
 
   useEffect(() => {
     if (!user) {
@@ -274,6 +312,37 @@ export default function AppLayout({ children }) {
           uiHidden ? "md:ml-0" : desktopSidebarExpanded ? "md:ml-[16.25rem]" : "md:ml-20"
         }`}
       >
+        {toast && (
+          <button
+            type="button"
+            onClick={() => {
+              const base =
+                user?.role === "EMPLOYEE"
+                  ? "/employee"
+                  : user?.role === "TECHNICIAN"
+                    ? "/technician"
+                    : "/admin";
+              navigate(`${base}/tickets/${toast.ticketId}`);
+              setToast(null);
+            }}
+            className="fixed top-20 right-4 z-[60] w-[22rem] max-w-[90vw] text-left rounded-xl border border-indigo-100 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-lg px-4 py-3"
+          >
+            <div className="text-sm font-semibold text-gray-900 dark:text-white">
+              New message{toast.ticketNumber ? ` on Ticket #${toast.ticketNumber}` : ""}
+            </div>
+            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              {toast.fromName ? `From ${toast.fromName}` : "A ticket has a new reply"}
+            </div>
+            {toast.messagePreview && (
+              <div className="mt-2 text-sm text-gray-700 dark:text-gray-200 line-clamp-2">
+                {toast.messagePreview}
+              </div>
+            )}
+            <div className="mt-2 text-xs text-primary-600 dark:text-primary-400 font-medium">
+              Click to open
+            </div>
+          </button>
+        )}
         <div
           className={`relative z-50 transition-all duration-200 ${
             uiHidden ? "opacity-0 -translate-y-4 pointer-events-none" : "opacity-100 translate-y-0"

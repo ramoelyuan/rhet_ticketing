@@ -5,6 +5,7 @@ import { PriorityChip, StatusChip } from "./TicketChips";
 import TicketTimeline from "./TicketTimeline";
 import Loading from "./Loading";
 import { useAuth } from "../hooks/useAuth";
+import { useTicketEvents } from "../hooks/useTicketEvents";
 import { assignTicket, listTechnicians } from "../services/admin";
 
 export default function TicketDetailsView() {
@@ -32,6 +33,10 @@ export default function TicketDetailsView() {
   useEffect(() => {
     load().catch((e) => setError(e?.response?.data?.error || "Failed to load ticket"));
   }, [id]);
+
+  useTicketEvents(undefined, (ticketId) => {
+    if (ticketId === id) load().catch(() => {});
+  });
 
   useEffect(() => {
     if (user?.role !== "ADMIN") return;
@@ -117,6 +122,20 @@ export default function TicketDetailsView() {
     if (!canTechResolve) return;
     if (status !== "RESOLVED" && status !== "NOT_RESOLVED") setStatus("RESOLVED");
   }, [data, user?.role, user?.id, status]);
+
+  useEffect(() => {
+    // Safety net: if SSE isn't connected, poll while ticket is still takeable.
+    if (!data) return;
+    const t = data.ticket;
+    const canStaff = user?.role === "TECHNICIAN" || user?.role === "ADMIN";
+    const shouldPoll = canStaff && t.status === "OPEN" && !t.assignedTechnician?.id;
+    if (!shouldPoll) return;
+
+    const interval = setInterval(() => {
+      load().catch(() => {});
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [data, user?.role, id]);
 
   if (!data) {
     if (error) {

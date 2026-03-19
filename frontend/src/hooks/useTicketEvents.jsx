@@ -4,18 +4,22 @@ import { useAuth } from "./useAuth";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 /**
- * Subscribe to real-time new-ticket events (SSE). When an employee creates a ticket,
- * IT Support receives the event and can refetch the ticket list without refreshing.
- * Only active for TECHNICIAN and ADMIN.
+ * Subscribe to real-time ticket events (SSE).
  * @param {() => void} onNewTicket - Called when a new ticket is created (refetch list).
+ * @param {(ticketId: string) => void} [onTicketUpdated] - Called when a ticket is updated (e.g. taken).
+ * @param {(payload: any) => void} [onTicketMessage] - Called when a new message/reply is added to a ticket.
  */
-export function useTicketEvents(onNewTicket) {
+export function useTicketEvents(onNewTicket, onTicketUpdated, onTicketMessage) {
   const { user } = useAuth();
   const onNewTicketRef = useRef(onNewTicket);
+  const onTicketUpdatedRef = useRef(onTicketUpdated);
+  const onTicketMessageRef = useRef(onTicketMessage);
   onNewTicketRef.current = onNewTicket;
+  onTicketUpdatedRef.current = onTicketUpdated;
+  onTicketMessageRef.current = onTicketMessage;
 
   useEffect(() => {
-    if (!user || (user.role !== "TECHNICIAN" && user.role !== "ADMIN")) return;
+    if (!user) return;
 
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -31,6 +35,12 @@ export function useTicketEvents(onNewTicket) {
           const data = JSON.parse(e.data || "{}");
           if (data.type === "new_ticket" && onNewTicketRef.current) {
             onNewTicketRef.current();
+          }
+          if (data.type === "ticket_updated" && data.ticketId && onTicketUpdatedRef.current) {
+            onTicketUpdatedRef.current(data.ticketId);
+          }
+          if (data.type === "ticket_message" && data.ticketId && onTicketMessageRef.current) {
+            onTicketMessageRef.current(data);
           }
         } catch {
           // ignore parse errors

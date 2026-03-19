@@ -3,7 +3,7 @@ const { pool } = require("../config/db");
 const { addTimelineEvent } = require("../services/timeline");
 const { addActivityLog } = require("../services/activityLog");
 const { ACTIVE_STATUSES } = require("../services/assignment");
-const { broadcastNewTicket } = require("../services/sse");
+const { broadcastNewTicket, broadcastTicketUpdated, broadcastTicketMessage } = require("../services/sse");
 
 const createTicketSchema = z.object({
   subject: z.string().trim().min(3),
@@ -347,7 +347,7 @@ async function addReply(req, res, next) {
     const { message, isInternal } = replySchema.parse(req.body);
 
     const { rows } = await pool.query(
-      "SELECT id, status, created_by, assigned_technician_id FROM tickets WHERE id=$1",
+      "SELECT id, ticket_number, subject, status, created_by, assigned_technician_id FROM tickets WHERE id=$1",
       [ticketId]
     );
     const ticket = rows[0];
@@ -385,6 +385,30 @@ async function addReply(req, res, next) {
         actorRole: req.user.role,
         action: "TICKET_REPLIED",
         meta: { ticketId, isInternal: internal },
+      });
+    }
+
+    // Notify relevant parties (targeted SSE) when a public message arrives on an active ticket.
+    const recipients = new Set();
+    const authorId = req.user.id;
+    if (!internal) {
+      if (ticket.created_by && ticket.created_by !== authorId) recipients.add(ticket.created_by);
+      if (ticket.assigned_technician_id && ticket.assigned_technician_id !== authorId) recipients.add(ticket.assigned_technician_id);
+      // Admins may be connected; they can ignore client-side if desired.
+      // We don't have admin ids here; the frontend can rely on staff view/polling.
+    } else {
+      // Internal notes should notify staff only; if assigned tech isn't the author, notify them.
+      if (ticket.assigned_technician_id && ticket.assigned_technician_id !== authorId) recipients.add(ticket.assigned_technician_id);
+    }
+
+    if (recipients.size > 0) {
+      broadcastTicketMessage({
+        ticketId,
+        ticketNumber: ticket.ticket_number,
+        fromUserId: authorId,
+        fromName: req.user.fullName,
+        messagePreview: String(message).slice(0, 160),
+        recipients: Array.from(recipients),
       });
     }
 
@@ -617,6 +641,7 @@ async function takeTicket(req, res, next) {
       action: "TICKET_TAKEN",
       meta: { ticketId },
     });
+    broadcastTicketUpdated(ticketId);
     res.json({ ok: true });
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
