@@ -30,15 +30,25 @@ export default function AdminDashboard() {
   useTicketEvents(() => setRefreshTrigger((t) => t + 1));
 
   const displayItems = useMemo(() => {
-    if (statusGroup !== "active") return tickets.items;
+    /** Show IT support as first name only on admin dashboard (e.g. "Allen" not "Allen Balagtas"). */
+    const mapTechnicianFirstName = (items) =>
+      (items || []).map((row) => ({
+        ...row,
+        technicianName:
+          row.technicianName && typeof row.technicianName === "string"
+            ? row.technicianName.trim().split(/\s+/)[0]
+            : row.technicianName,
+      }));
+    if (statusGroup !== "active") return mapTechnicianFirstName(tickets.items);
     // Backend already sorts active by priority, but keep a stable client sort too.
     const weight = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-    return [...(tickets.items || [])].sort((a, b) => {
+    const sorted = [...(tickets.items || [])].sort((a, b) => {
       const pa = weight[a.priority] || 0;
       const pb = weight[b.priority] || 0;
       if (pb !== pa) return pb - pa;
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
+    return mapTechnicianFirstName(sorted);
   }, [tickets.items, statusGroup]);
 
   useEffect(() => {
