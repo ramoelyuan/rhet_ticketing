@@ -185,6 +185,7 @@ async function listTickets(req, res, next) {
         t.id, t.ticket_number, t.subject, t.priority, t.status, t.created_at, t.updated_at, t.resolved_at,
         c.name AS category_name,
         u.full_name AS created_by_name,
+        u.department AS created_by_department,
         tech.full_name AS technician_name,
         t.assigned_technician_id
       FROM tickets t
@@ -213,6 +214,7 @@ async function listTickets(req, res, next) {
         resolvedAt: r.resolved_at,
         category: r.category_name,
         createdByName: r.created_by_name,
+        createdByDepartment: r.created_by_department,
         assignedTechnicianId: r.assigned_technician_id,
         technicianName: r.technician_name,
       })),

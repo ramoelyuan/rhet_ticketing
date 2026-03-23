@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const { z } = require("zod");
+const { DEPARTMENTS, isValidDepartment } = require("../constants/departments");
 const { pool } = require("../config/db");
 const { addTimelineEvent } = require("../services/timeline");
 const { addActivityLog } = require("../services/activityLog");
@@ -78,7 +79,7 @@ async function listEmployees(req, res, next) {
   try {
     const { rows } = await pool.query(
       `
-      SELECT id, full_name, email, is_active, created_at
+      SELECT id, full_name, email, is_active, created_at, department
       FROM users
       WHERE role = 'EMPLOYEE'
       ORDER BY full_name ASC
@@ -91,6 +92,7 @@ async function listEmployees(req, res, next) {
         email: e.email,
         isActive: e.is_active,
         createdAt: e.created_at,
+        department: e.department,
       })),
     });
   } catch (err) {
@@ -102,19 +104,25 @@ const createEmployeeSchema = z.object({
   fullName: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
+  department: z.string().min(1),
 });
 
 async function createEmployee(req, res, next) {
   try {
-    const { fullName, email, password } = createEmployeeSchema.parse(req.body);
+    const { fullName, email, password, department } = createEmployeeSchema.parse(req.body);
+    if (!isValidDepartment(department)) {
+      return res.status(400).json({
+        error: `Invalid department. Must be one of: ${DEPARTMENTS.join(", ")}`,
+      });
+    }
     const passwordHash = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
       `
-      INSERT INTO users (full_name, email, password_hash, role)
-      VALUES ($1,$2,$3,'EMPLOYEE')
-      RETURNING id, full_name, email, role
+      INSERT INTO users (full_name, email, password_hash, role, department)
+      VALUES ($1,$2,$3,'EMPLOYEE',$4)
+      RETURNING id, full_name, email, role, department
       `,
-      [fullName.trim(), email.toLowerCase(), passwordHash]
+      [fullName.trim(), email.toLowerCase(), passwordHash, department.trim()]
     );
     await addActivityLog({
       actorUserId: req.user.id,

@@ -290,6 +290,7 @@ export default function AdminDashboard() {
                   size="large"
                   translucent
                   stackDateTime
+                  showRequesterDepartment
                 />
               </div>
             </div>

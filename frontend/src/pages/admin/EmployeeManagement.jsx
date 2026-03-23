@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Loading from "../../components/Loading";
 import { listEmployees, createEmployee, toggleUserActive } from "../../services/admin";
+import { DEPARTMENTS } from "../../constants/departments";
 
 export default function EmployeeManagement() {
   const [rows, setRows] = useState([]);
@@ -12,6 +13,7 @@ export default function EmployeeManagement() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [department, setDepartment] = useState("");
   const [busy, setBusy] = useState(false);
 
   const filteredRows = useMemo(() => {
@@ -38,6 +40,7 @@ export default function EmployeeManagement() {
     setFullName("");
     setEmail("");
     setPassword("");
+    setDepartment("");
     setMsg(null);
     setModalOpen(true);
   }
@@ -59,13 +62,18 @@ export default function EmployeeManagement() {
       setMsg({ type: "error", text: "Password must be at least 6 characters." });
       return;
     }
+    if (!department) {
+      setMsg({ type: "error", text: "Please select a department." });
+      return;
+    }
     setBusy(true);
     try {
-      await createEmployee({ fullName: trimmedName, email: trimmedEmail, password });
+      await createEmployee({ fullName: trimmedName, email: trimmedEmail, password, department });
       setMsg({ type: "success", text: "Employee created." });
       setFullName("");
       setEmail("");
       setPassword("");
+      setDepartment("");
       setModalOpen(false);
       await load();
     } catch (err) {
@@ -119,6 +127,9 @@ export default function EmployeeManagement() {
             >
               <div>
                 <p className="font-semibold text-gray-900 dark:text-white">{e.fullName}</p>
+                {e.department ? (
+                  <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">{e.department}</p>
+                ) : null}
                 <p className="text-sm text-gray-500 dark:text-gray-400">{e.email}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Active: {e.isActive ? "Yes" : "No"}
@@ -203,6 +214,23 @@ export default function EmployeeManagement() {
                     required
                     autoComplete="new-password"
                   />
+                </div>
+                <div>
+                  <label htmlFor="emp-department" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                  <select
+                    id="emp-department"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="input-field w-full"
+                    required
+                  >
+                    <option value="">Select department…</option>
+                    {DEPARTMENTS.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <button type="submit" disabled={busy} className="btn-primary flex-1">

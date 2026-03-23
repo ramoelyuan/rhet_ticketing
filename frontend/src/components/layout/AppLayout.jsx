@@ -25,6 +25,9 @@ export default function AppLayout({ children }) {
   const [desktopSidebarExpanded, setDesktopSidebarExpanded] = useState(false);
   const [ticketsDot, setTicketsDot] = useState(false);
   const [uiHidden, setUiHidden] = useState(false);
+  const uiHiddenRef = useRef(false);
+  /** After hiding UI, layout changes (spacer removed) fire scroll events — ignore those so idle-hide actually sticks. */
+  const ignoreScrollUntilRef = useRef(0);
   const idleTimer = useRef(null);
   const notificationAudioRef = useRef(null);
   const notificationAudioAltRef = useRef(null);
@@ -42,6 +45,10 @@ export default function AppLayout({ children }) {
   }
 
   useEffect(() => {
+    uiHiddenRef.current = uiHidden;
+  }, [uiHidden]);
+
+  useEffect(() => {
     function clearTimer() {
       if (idleTimer.current) {
         clearTimeout(idleTimer.current);
@@ -51,21 +58,27 @@ export default function AppLayout({ children }) {
 
     function armTimer() {
       clearTimer();
-      idleTimer.current = setTimeout(() => setUiHidden(true), 5 * 1000);
+      idleTimer.current = setTimeout(() => {
+        ignoreScrollUntilRef.current = Date.now() + 800;
+        setUiHidden(true);
+      }, 5 * 1000);
     }
 
-    function onActivity() {
-      if (uiHidden) setUiHidden(false);
+    function onActivity(ev) {
+      if (ev?.type === "scroll" && Date.now() < ignoreScrollUntilRef.current) return;
+      if (uiHiddenRef.current) setUiHidden(false);
       armTimer();
     }
 
     armTimer();
 
     const opts = { passive: true };
+    const scrollOpts = { passive: true, capture: true };
     window.addEventListener("mousemove", onActivity, opts);
     window.addEventListener("mousedown", onActivity, opts);
     window.addEventListener("keydown", onActivity);
-    window.addEventListener("scroll", onActivity, opts);
+    // Capture: scroll often happens on nested overflow areas, not only window.
+    document.addEventListener("scroll", onActivity, scrollOpts);
     window.addEventListener("touchstart", onActivity, opts);
 
     return () => {
@@ -73,10 +86,10 @@ export default function AppLayout({ children }) {
       window.removeEventListener("mousemove", onActivity, opts);
       window.removeEventListener("mousedown", onActivity, opts);
       window.removeEventListener("keydown", onActivity);
-      window.removeEventListener("scroll", onActivity, opts);
+      document.removeEventListener("scroll", onActivity, scrollOpts);
       window.removeEventListener("touchstart", onActivity, opts);
     };
-  }, [uiHidden]);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -343,17 +356,21 @@ export default function AppLayout({ children }) {
             </div>
           </button>
         )}
+        {/* Fixed top bar stays in view while scrolling (sticky is unreliable inside flex / transformed ancestors). */}
         <div
-          className={`relative z-50 transition-all duration-200 ${
-            uiHidden ? "opacity-0 -translate-y-4 pointer-events-none" : "opacity-100 translate-y-0"
+          className={`fixed top-0 right-0 z-50 h-16 transition-[left,opacity] duration-200 ease-out left-0 ${
+            uiHidden
+              ? "md:left-0 opacity-0 pointer-events-none"
+              : desktopSidebarExpanded
+                ? "opacity-100 md:left-[16.25rem]"
+                : "opacity-100 md:left-20"
           }`}
         >
           <Topbar onMenu={() => setMobileOpen(true)} />
         </div>
+        {!uiHidden ? <div className="h-16 shrink-0" aria-hidden /> : null}
         <main
-          className={`relative z-0 flex-1 px-4 md:px-6 py-6 md:py-8 max-w-7xl w-full mx-auto transition-[margin-top] duration-200 ease-out ${
-            uiHidden ? "-mt-16" : "mt-0"
-          }`}
+          className="relative z-0 flex-1 px-4 md:px-6 py-6 md:py-8 max-w-7xl w-full mx-auto"
         >
           {children}
         </main>

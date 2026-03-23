@@ -51,6 +51,7 @@ export default function TicketTable({
   translucent = false,
   emptyAction = null, // { label: string, to: string } e.g. { label: "Create ticket", to: "/employee/create" }
   stackDateTime = false, // when true, show date above time for Requested/Resolved at
+  showRequesterDepartment = false, // admin dashboard: department under requester name
 }) {
   const [orderBy, setOrderBy] = useState("createdAt");
   const [order, setOrder] = useState("desc");
@@ -150,8 +151,20 @@ export default function TicketTable({
               return (
                 <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className={`px-4 ${padY} ${cellText} text-gray-900 dark:text-gray-100 whitespace-nowrap`}>{t.ticketNumber}</td>
-                  <td className={`px-4 ${padY} ${cellText} font-medium text-gray-900 dark:text-white max-w-xs truncate`} title={t.createdByName}>
-                    {t.createdByName || "—"}
+                  <td
+                    className={`px-4 ${padY} ${cellText} text-gray-900 dark:text-white max-w-xs ${showRequesterDepartment ? "" : "truncate font-medium"}`}
+                    title={showRequesterDepartment && t.createdByDepartment ? `${t.createdByName || ""} · ${t.createdByDepartment}` : t.createdByName}
+                  >
+                    {showRequesterDepartment ? (
+                      <div className="min-w-0">
+                        <div className={`font-medium ${cellText}`}>{t.createdByName || "—"}</div>
+                        {t.createdByDepartment ? (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{t.createdByDepartment}</div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      t.createdByName || "—"
+                    )}
                   </td>
                   <td className={`px-4 ${padY} ${cellText} text-gray-600 dark:text-gray-400`}>{t.category || "—"}</td>
                   <td className={`px-4 ${padY}`}>
