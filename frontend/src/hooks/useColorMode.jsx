@@ -1,26 +1,32 @@
-import React, { createContext, useContext, useEffect, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const ColorModeContext = createContext(null);
 
-/** App is always light; header/sidebar use dark styling via fixed classes (no html.dark). */
 export function ColorModeProvider({ children }) {
+  const [mode, setMode] = useState(() => {
+    if (typeof window === "undefined") return "light";
+    return localStorage.getItem("colorMode") || "light";
+  });
+
   useEffect(() => {
-    document.documentElement.classList.remove("dark");
+    const root = document.documentElement;
+    if (mode === "dark") root.classList.add("dark");
+    else root.classList.remove("dark");
     try {
-      localStorage.removeItem("colorMode");
+      localStorage.setItem("colorMode", mode);
     } catch {
       // ignore
     }
-  }, []);
+  }, [mode]);
 
   const value = useMemo(
     () => ({
-      mode: "light",
+      mode,
       toggleMode() {
-        // Theme toggle removed — always light content area.
+        setMode((prev) => (prev === "light" ? "dark" : "light"));
       },
     }),
-    []
+    [mode]
   );
 
   return <ColorModeContext.Provider value={value}>{children}</ColorModeContext.Provider>;

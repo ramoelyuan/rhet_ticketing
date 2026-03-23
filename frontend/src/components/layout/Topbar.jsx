@@ -4,8 +4,11 @@ import {
   Bars3Icon,
   ChevronDownIcon,
   KeyIcon,
+  MoonIcon,
+  SunIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../../hooks/useAuth";
+import { useColorMode } from "../../hooks/useColorMode";
 import { changePassword as changePasswordApi } from "../../services/auth";
 
 function roleDisplayLabel(role) {
@@ -17,6 +20,7 @@ function roleDisplayLabel(role) {
 
 export default function Topbar({ onMenu }) {
   const { user, logout } = useAuth();
+  const { mode, toggleMode } = useColorMode();
   const displayName = user ? (user.fullName || roleDisplayLabel(user.role)) : "";
   const roleLabel = user ? roleDisplayLabel(user.role) : "";
   const [profileOpen, setProfileOpen] = useState(false);
@@ -87,7 +91,7 @@ export default function Topbar({ onMenu }) {
   }
 
   return (
-    <header className="sticky top-0 z-50 flex items-center h-16 px-4 gap-3 bg-slate-900 backdrop-blur-md border-b border-slate-800 shadow-none">
+    <header className="sticky top-0 z-50 flex items-center h-16 px-4 gap-3 bg-slate-900 backdrop-blur-md border-b border-slate-900 shadow-none">
       <button
         type="button"
         onClick={onMenu}
@@ -99,6 +103,14 @@ export default function Topbar({ onMenu }) {
       <div className="flex-1" />
       {user && (
         <div className="flex items-center gap-2 ml-auto">
+          <button
+            type="button"
+            onClick={toggleMode}
+            className="p-2 rounded-lg text-gray-400 hover:bg-slate-800"
+            aria-label={mode === "light" ? "Switch to dark mode" : "Switch to light mode"}
+          >
+            {mode === "light" ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
+          </button>
           <span className="hidden sm:inline-flex items-center rounded-md border border-slate-600 px-2 py-0.5 text-xs font-medium text-gray-300">
             {roleLabel}
           </span>
@@ -118,14 +130,14 @@ export default function Topbar({ onMenu }) {
             </button>
             {profileOpen && (
               <>
-                <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg bg-white shadow-lg border border-indigo-100 py-1">
-                  <div className="px-3 py-2 text-sm text-slate-500 truncate border-b border-indigo-50">
+                <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg bg-white dark:bg-slate-800 shadow-lg border border-indigo-100 dark:border-slate-700 py-1">
+                  <div className="px-3 py-2 text-sm text-slate-500 dark:text-gray-400 truncate border-b border-indigo-50 dark:border-slate-700">
                     {user.email}
                   </div>
                   <button
                     type="button"
                     onClick={openPasswordModal}
-                    className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50/80 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50/80 dark:hover:bg-slate-700 flex items-center gap-2"
                   >
                     <KeyIcon className="w-4 h-4" />
                     Change password
@@ -136,7 +148,7 @@ export default function Topbar({ onMenu }) {
                       setProfileOpen(false);
                       logout();
                     }}
-                    className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-indigo-50/80"
+                    className="w-full px-3 py-2 text-left text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50/80 dark:hover:bg-slate-700"
                   >
                     Logout
                   </button>
@@ -160,7 +172,7 @@ export default function Topbar({ onMenu }) {
               role="dialog"
               aria-modal="true"
               aria-labelledby="change-password-title"
-              className="rounded-lg shadow-xl border border-indigo-100 p-5 overflow-y-auto w-full max-w-sm bg-white text-gray-900"
+              className="rounded-lg shadow-xl border border-indigo-100 dark:border-slate-700 p-5 overflow-y-auto w-full max-w-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
               style={{
                 maxHeight: "min(100vh - 2rem, 28rem)",
                 boxSizing: "border-box",
@@ -170,15 +182,15 @@ export default function Topbar({ onMenu }) {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 id="change-password-title" className="text-lg font-semibold text-gray-900 mb-4">
+              <h2 id="change-password-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Change password
               </h2>
               {passwordSuccess ? (
-                <p className="text-sm text-green-600">Password changed successfully.</p>
+                <p className="text-sm text-green-600 dark:text-green-400">Password changed successfully.</p>
               ) : (
                 <form onSubmit={submitChangePassword} className="space-y-3">
                   <div>
-                    <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Current password
                     </label>
                     <input
@@ -192,7 +204,7 @@ export default function Topbar({ onMenu }) {
                     />
                   </div>
                   <div>
-                    <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       New password
                     </label>
                     <input
@@ -207,7 +219,7 @@ export default function Topbar({ onMenu }) {
                     />
                   </div>
                   <div>
-                    <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Confirm new password
                     </label>
                     <input
@@ -221,7 +233,7 @@ export default function Topbar({ onMenu }) {
                       autoComplete="new-password"
                     />
                   </div>
-                  {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+                  {passwordError && <p className="text-sm text-red-600 dark:text-red-400">{passwordError}</p>}
                   <div className="flex gap-2 pt-1">
                     <button type="submit" disabled={passwordBusy} className="btn-primary flex-1">
                       {passwordBusy ? "Saving..." : "Save"}

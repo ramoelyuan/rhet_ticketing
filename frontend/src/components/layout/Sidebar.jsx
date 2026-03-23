@@ -19,65 +19,68 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
   }
 
   const sidebarContent = (showExpanded) => (
-    <div className="h-full flex flex-col bg-slate-900 backdrop-blur-md border-r border-slate-800 shadow-none">
-      <div className="h-16 px-4 flex items-center gap-2">
+    <div className="h-full flex flex-col shadow-sm shadow-indigo-950/5 dark:shadow-none bg-[#f0f4ff] dark:bg-slate-900">
+      {/* Same height & color as header — right edge matches main header (no light border in light mode) */}
+      <div className="h-16 px-4 flex items-center gap-2 shrink-0 bg-slate-900 border-r border-slate-800 dark:border-b dark:border-slate-800">
         <img src="/logo/rhetlogo.png" alt="Rhet" className="h-9 w-auto flex-shrink-0 object-contain" />
         {showExpanded && (
           <span className="text-sm font-bold uppercase text-gray-400 truncate">IT Service Desk</span>
         )}
       </div>
-      <div className="border-t border-slate-800" />
-      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to.split("/").filter(Boolean).length === 1}
-              onClick={mobileOpen ? onClose : undefined}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  item.disabled ? "pointer-events-none opacity-50" : ""
-                } ${
-                  isActive
-                    ? "bg-primary text-white"
-                    : "text-gray-300 hover:bg-slate-800"
-                }`
-              }
-            >
-              {Icon && (
-                <span className="relative flex-shrink-0 w-6 h-6 flex items-center justify-center">
-                  <Icon className="w-5 h-5" />
-                  {item.showDot && !showExpanded && (
-                    <span
-                      className="absolute top-0 right-0 w-2 h-2 rounded-full bg-red-500 ring-2 ring-slate-900"
-                      aria-hidden
-                    />
-                  )}
-                </span>
-              )}
-              {showExpanded && (
-                <>
-                  <span className="truncate">{item.label}</span>
-                  {item.showDot && (
-                    <span className="flex-shrink-0 w-2 h-2 rounded-full bg-red-500" aria-hidden />
-                  )}
-                </>
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
-      <div className="p-2 border-t border-slate-800 flex justify-center md:hidden">
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          className="p-2 rounded-lg text-gray-400 hover:bg-slate-800 transition-colors"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRightIcon className="w-5 h-5" /> : <ChevronLeftIcon className="w-5 h-5" />}
-        </button>
+      {/* Nav area: light vertical rule only here (not through dark header strip) */}
+      <div className="flex-1 flex flex-col min-h-0 bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-r border-indigo-200/70 dark:border-slate-800">
+        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to.split("/").filter(Boolean).length === 1}
+                onClick={mobileOpen ? onClose : undefined}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    item.disabled ? "pointer-events-none opacity-50" : ""
+                  } ${
+                    isActive
+                      ? "bg-primary text-white"
+                      : "text-slate-700 hover:bg-indigo-100/80 dark:text-gray-300 dark:hover:bg-slate-800"
+                  }`
+                }
+              >
+                {Icon && (
+                  <span className="relative flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                    <Icon className="w-5 h-5" />
+                    {item.showDot && !showExpanded && (
+                      <span
+                        className="absolute top-0 right-0 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"
+                        aria-hidden
+                      />
+                    )}
+                  </span>
+                )}
+                {showExpanded && (
+                  <>
+                    <span className="truncate">{item.label}</span>
+                    {item.showDot && (
+                      <span className="flex-shrink-0 w-2 h-2 rounded-full bg-red-500" aria-hidden />
+                    )}
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+        <div className="p-2 border-t border-indigo-200/60 dark:border-slate-800 flex justify-center md:hidden">
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="p-2 rounded-lg text-slate-500 hover:bg-indigo-100/80 dark:text-gray-400 dark:hover:bg-slate-800 transition-colors"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRightIcon className="w-5 h-5" /> : <ChevronLeftIcon className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -100,7 +103,7 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
         {sidebarContent(true)}
       </aside>
       <aside
-        className={`hidden md:block fixed top-0 left-0 z-30 h-full transition-all duration-200 ease-out bg-slate-900 border-r border-slate-800 ${
+        className={`hidden md:block fixed top-0 left-0 z-30 h-full transition-all duration-200 ease-out bg-transparent ${
           hidden ? "opacity-0 -translate-x-4 pointer-events-none" : "opacity-100 translate-x-0"
         }`}
         style={{ width: desktopExpanded ? WIDTH_EXPANDED : WIDTH_COLLAPSED }}
