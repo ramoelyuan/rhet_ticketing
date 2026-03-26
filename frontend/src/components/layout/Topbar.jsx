@@ -91,11 +91,11 @@ export default function Topbar({ onMenu }) {
   }
 
   return (
-    <header className="flex h-full w-full items-center px-4 gap-3 bg-slate-900 backdrop-blur-md border-b border-slate-900 shadow-none">
+    <header className="flex h-full w-full items-center px-4 gap-3 bg-[#0a2e3c] backdrop-blur-md border-b border-black/10 shadow-none">
       <button
         type="button"
         onClick={onMenu}
-        className="md:hidden p-2 rounded-lg text-gray-400 hover:bg-slate-800"
+        className="md:hidden p-2 rounded-lg text-[#839bb0] hover:bg-white/10"
         aria-label="Open menu"
       >
         <Bars3Icon className="w-6 h-6" />
@@ -106,27 +106,27 @@ export default function Topbar({ onMenu }) {
           <button
             type="button"
             onClick={toggleMode}
-            className="p-2 rounded-lg text-gray-400 hover:bg-slate-800"
+            className="p-2 rounded-lg text-[#839bb0] hover:bg-white/10"
             aria-label={mode === "light" ? "Switch to dark mode" : "Switch to light mode"}
           >
             {mode === "light" ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
           </button>
-          <span className="hidden sm:inline-flex items-center rounded-md border border-slate-600 px-2 py-0.5 text-xs font-medium text-gray-300">
+          <span className="hidden sm:inline-flex items-center rounded-md border border-white/20 px-2 py-0.5 text-xs font-medium text-white/80">
             {roleLabel}
           </span>
           <div className="relative" ref={profileMenuRef}>
             <button
               type="button"
               onClick={() => setProfileOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-lg py-1.5 pl-1 pr-2 text-left hover:bg-slate-800 transition-colors"
+              className="flex items-center gap-2 rounded-lg py-1.5 pl-1 pr-2 text-left hover:bg-white/10 transition-colors"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white text-sm font-medium">
                 {displayName?.[0] || "A"}
               </span>
-              <span className="hidden sm:block text-sm text-gray-400 max-w-[120px] truncate">
+              <span className="hidden sm:block text-sm text-white/80 max-w-[120px] truncate">
                 {displayName}
               </span>
-              <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+              <ChevronDownIcon className="w-4 h-4 text-white/70" />
             </button>
             {profileOpen && (
               <>

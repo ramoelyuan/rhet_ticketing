@@ -19,16 +19,16 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
   }
 
   const sidebarContent = (showExpanded) => (
-    <div className="h-full flex flex-col shadow-sm shadow-indigo-950/5 dark:shadow-none bg-[#f0f4ff] dark:bg-slate-900">
+    <div className="h-full flex flex-col shadow-sm shadow-black/5 dark:shadow-none bg-white dark:bg-[#061f28]">
       {/* Same height & color as header — right edge matches main header (no light border in light mode) */}
-      <div className="h-16 px-4 flex items-center gap-2 shrink-0 bg-slate-900 border-r border-slate-800 dark:border-b dark:border-slate-800">
+      <div className="h-16 px-4 flex items-center gap-2 shrink-0 bg-[#0a2e3c] border-r border-black/10 dark:border-b dark:border-white/10">
         <img src="/logo/rhetlogo.png" alt="Rhet" className="h-9 w-auto flex-shrink-0 object-contain" />
         {showExpanded && (
-          <span className="text-sm font-bold uppercase text-gray-400 truncate">IT Service Desk</span>
+          <span className="text-sm font-bold uppercase text-white/80 truncate">IT Service Desk</span>
         )}
       </div>
       {/* Nav area: light vertical rule only here (not through dark header strip) */}
-      <div className="flex-1 flex flex-col min-h-0 bg-[#f0f4ff]/95 dark:bg-slate-900 backdrop-blur-md border-r border-indigo-200/70 dark:border-slate-800">
+      <div className="flex-1 flex flex-col min-h-0 bg-white/95 dark:bg-[#061f28] backdrop-blur-md border-r border-black/10 dark:border-white/10">
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
           {items.map((item) => {
             const Icon = item.icon;
@@ -44,7 +44,7 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
                   } ${
                     isActive
                       ? "bg-primary text-white"
-                      : "text-slate-700 hover:bg-indigo-100/80 dark:text-gray-300 dark:hover:bg-slate-800"
+                      : "text-[#0a2e3c] hover:bg-black/5 dark:text-white/80 dark:hover:bg-white/10"
                   }`
                 }
               >
@@ -71,11 +71,11 @@ export default function Sidebar({ items, mobileOpen, onClose, collapsed, onToggl
             );
           })}
         </nav>
-        <div className="p-2 border-t border-indigo-200/60 dark:border-slate-800 flex justify-center md:hidden">
+        <div className="p-2 border-t border-black/10 dark:border-white/10 flex justify-center md:hidden">
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="p-2 rounded-lg text-slate-500 hover:bg-indigo-100/80 dark:text-gray-400 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg text-[#839bb0] hover:bg-black/5 dark:text-white/70 dark:hover:bg-white/10 transition-colors"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? <ChevronRightIcon className="w-5 h-5" /> : <ChevronLeftIcon className="w-5 h-5" />}
