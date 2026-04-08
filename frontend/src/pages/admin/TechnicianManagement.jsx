@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Loading from "../../components/Loading";
+import PasswordField from "../../components/PasswordField";
 import {
   createTechnician,
   listTechnicians,
@@ -16,6 +17,7 @@ export default function TechnicianManagement() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   const filteredRows = useMemo(() => {
@@ -42,6 +44,7 @@ export default function TechnicianManagement() {
     setFullName("");
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
     setMsg(null);
     setModalOpen(true);
   }
@@ -63,6 +66,10 @@ export default function TechnicianManagement() {
       setMsg({ type: "error", text: "Password must be at least 6 characters." });
       return;
     }
+    if (password !== confirmPassword) {
+      setMsg({ type: "error", text: "Passwords do not match." });
+      return;
+    }
     setBusy(true);
     try {
       await createTechnician({ fullName: trimmedName, email: trimmedEmail, password });
@@ -70,6 +77,7 @@ export default function TechnicianManagement() {
       setFullName("");
       setEmail("");
       setPassword("");
+      setConfirmPassword("");
       setModalOpen(false);
       await load();
     } catch (err) {
@@ -150,18 +158,24 @@ export default function TechnicianManagement() {
                     required
                   />
                 </div>
-                <div>
-                  <label htmlFor="tech-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Temporary password (min 6 characters)</label>
-                  <input
-                    id="tech-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="input-field w-full"
-                    minLength={6}
-                    required
-                  />
-                </div>
+                <PasswordField
+                  id="tech-password"
+                  label="Temporary password (min 6 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={6}
+                  required
+                  autoComplete="new-password"
+                />
+                <PasswordField
+                  id="tech-password-confirm"
+                  label="Confirm password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  minLength={6}
+                  required
+                  autoComplete="new-password"
+                />
                 <div className="flex gap-2 pt-2">
                   <button type="submit" disabled={busy} className="btn-primary flex-1">
                     {busy ? "Adding..." : "Add IT support"}

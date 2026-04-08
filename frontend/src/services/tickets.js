@@ -20,8 +20,14 @@ export async function updateStatus(id, status) {
   return await apiPost(`/api/tickets/${id}/status`, { status });
 }
 
-export async function rateTicket(id, rating) {
-  return await apiPatch(`/api/tickets/${id}/rate`, { rating });
+export async function listPendingRatings() {
+  return await apiGet("/api/tickets/pending-ratings");
+}
+
+export async function rateTicket(id, rating, feedback) {
+  const body = { rating };
+  if (feedback != null && String(feedback).trim() !== "") body.feedback = String(feedback).trim();
+  return await apiPatch(`/api/tickets/${id}/rate`, body);
 }
 
 export async function takeTicket(id) {

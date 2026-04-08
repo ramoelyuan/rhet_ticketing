@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Loading from "../../components/Loading";
+import PasswordField from "../../components/PasswordField";
 import { listEmployees, createEmployee, toggleUserActive } from "../../services/admin";
 import { DEPARTMENTS } from "../../constants/departments";
 
@@ -13,6 +14,7 @@ export default function EmployeeManagement() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [department, setDepartment] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -40,6 +42,7 @@ export default function EmployeeManagement() {
     setFullName("");
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
     setDepartment("");
     setMsg(null);
     setModalOpen(true);
@@ -62,6 +65,10 @@ export default function EmployeeManagement() {
       setMsg({ type: "error", text: "Password must be at least 6 characters." });
       return;
     }
+    if (password !== confirmPassword) {
+      setMsg({ type: "error", text: "Passwords do not match." });
+      return;
+    }
     if (!department) {
       setMsg({ type: "error", text: "Please select a department." });
       return;
@@ -73,6 +80,7 @@ export default function EmployeeManagement() {
       setFullName("");
       setEmail("");
       setPassword("");
+      setConfirmPassword("");
       setDepartment("");
       setModalOpen(false);
       await load();
@@ -202,19 +210,24 @@ export default function EmployeeManagement() {
                     autoComplete="off"
                   />
                 </div>
-                <div>
-                  <label htmlFor="emp-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Temporary password (min 6 characters)</label>
-                  <input
-                    id="emp-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="input-field w-full"
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                  />
-                </div>
+                <PasswordField
+                  id="emp-password"
+                  label="Temporary password (min 6 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={6}
+                  required
+                  autoComplete="new-password"
+                />
+                <PasswordField
+                  id="emp-password-confirm"
+                  label="Confirm password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  minLength={6}
+                  required
+                  autoComplete="new-password"
+                />
                 <div>
                   <label htmlFor="emp-department" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
                   <select

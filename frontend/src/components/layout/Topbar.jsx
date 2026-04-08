@@ -10,6 +10,7 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 import { useColorMode } from "../../hooks/useColorMode";
 import { changePassword as changePasswordApi } from "../../services/auth";
+import PasswordField from "../PasswordField";
 
 function roleDisplayLabel(role) {
   if (role === "ADMIN") return "IT Admin";
@@ -189,50 +190,35 @@ export default function Topbar({ onMenu }) {
                 <p className="text-sm text-green-600 dark:text-green-400">Password changed successfully.</p>
               ) : (
                 <form onSubmit={submitChangePassword} className="space-y-3">
-                  <div>
-                    <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Current password
-                    </label>
-                    <input
-                      id="current-password"
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="input-field w-full"
-                      required
-                      autoComplete="current-password"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      New password
-                    </label>
-                    <input
-                      id="new-password"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="input-field w-full"
-                      required
-                      minLength={6}
-                      autoComplete="new-password"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Confirm new password
-                    </label>
-                    <input
-                      id="confirm-password"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="input-field w-full"
-                      required
-                      minLength={6}
-                      autoComplete="new-password"
-                    />
-                  </div>
+                  <PasswordField
+                    id="current-password"
+                    label="Current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    disabled={passwordBusy}
+                  />
+                  <PasswordField
+                    id="new-password"
+                    label="New password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    disabled={passwordBusy}
+                  />
+                  <PasswordField
+                    id="confirm-password"
+                    label="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    disabled={passwordBusy}
+                  />
                   {passwordError && <p className="text-sm text-red-600 dark:text-red-400">{passwordError}</p>}
                   <div className="flex gap-2 pt-1">
                     <button type="submit" disabled={passwordBusy} className="btn-primary flex-1">

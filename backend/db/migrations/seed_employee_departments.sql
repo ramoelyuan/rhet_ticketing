@@ -1,4 +1,4 @@
--- Run after add_employee_department.sql. Matches employees by full_name (ILIKE, trimmed).
+ -- Run after add_employee_department.sql. Matches employees by full_name (ILIKE, trimmed).
 -- Ops1: deactivated (cannot hard-delete if tickets reference user).
 
 BEGIN;

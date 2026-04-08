@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import EmployeeMandatoryRatingModal from "../EmployeeMandatoryRatingModal";
 import { useAuth } from "../../hooks/useAuth";
 import { listTickets } from "../../services/tickets";
 import { adminDashboard } from "../../services/admin";
@@ -385,6 +386,7 @@ export default function AppLayout({ children }) {
           <span className="pr-1 font-medium whitespace-nowrap">Create ticket</span>
         </Link>
       )}
+      {user?.role === "EMPLOYEE" && <EmployeeMandatoryRatingModal />}
     </div>
   );
 }

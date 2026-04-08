@@ -22,6 +22,7 @@ export default function TicketDetailsView() {
   const [takeBusy, setTakeBusy] = useState(false);
   const [rateBusy, setRateBusy] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(null);
+  const [rateFeedback, setRateFeedback] = useState("");
 
   async function load() {
     const res = await getTicket(id);
@@ -103,7 +104,8 @@ export default function TicketDetailsView() {
     setError(null);
     setRateBusy(true);
     try {
-      await rateTicket(id, stars);
+      await rateTicket(id, stars, rateFeedback.trim() || undefined);
+      setRateFeedback("");
       await load();
     } catch (e) {
       setError(e?.response?.data?.error || "Failed to submit rating");
@@ -285,14 +287,32 @@ export default function TicketDetailsView() {
             <div className="card p-5">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Rate IT support</h2>
               {t.employeeRating != null ? (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  You rated {t.employeeRating} out of 5 stars.
-                </p>
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <p>You rated {t.employeeRating} out of 5 stars.</p>
+                  {t.employeeFeedback ? (
+                    <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                      Your feedback: {t.employeeFeedback}
+                    </p>
+                  ) : null}
+                </div>
               ) : (
                 <>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                     How was your experience with {t.assignedTechnician.name}?
                   </p>
+                  <label htmlFor="ticket-rate-feedback" className="sr-only">
+                    Optional written feedback
+                  </label>
+                  <textarea
+                    id="ticket-rate-feedback"
+                    value={rateFeedback}
+                    onChange={(e) => setRateFeedback(e.target.value)}
+                    rows={2}
+                    maxLength={2000}
+                    disabled={rateBusy}
+                    placeholder="Optional feedback…"
+                    className="input-field w-full text-sm mb-3 resize-y min-h-[2.75rem]"
+                  />
                   <div
                     className="flex gap-1"
                     onMouseLeave={() => setHoveredStar(null)}

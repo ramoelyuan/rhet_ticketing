@@ -2,6 +2,7 @@ const express = require("express");
 const {
   createTicket,
   listTickets,
+  listPendingRatings,
   getTicketDetails,
   addReply,
   updateStatus,
@@ -20,6 +21,8 @@ router.get("/", listTickets);
 router.post("/", requireRole("EMPLOYEE"), createTicket);
 
 router.get("/technicians/workload", requireRole("TECHNICIAN", "ADMIN"), technicianWorkload);
+
+router.get("/pending-ratings", requireRole("EMPLOYEE"), listPendingRatings);
 
 router.get("/:id", getTicketDetails);
 router.post("/:id/replies", addReply);

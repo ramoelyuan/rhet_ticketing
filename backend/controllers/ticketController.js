@@ -224,6 +224,50 @@ async function listTickets(req, res, next) {
   }
 }
 
+/** Tickets the employee must rate (resolved / not resolved, assigned IT support, no rating yet). */
+async function listPendingRatings(req, res, next) {
+  try {
+    const { rows } = await pool.query(
+      `
+      SELECT
+        t.id,
+        t.ticket_number,
+        t.subject,
+        t.status,
+        t.resolved_at,
+        t.created_at,
+        tech.full_name AS technician_name,
+        tech.id AS technician_id
+      FROM tickets t
+      JOIN users tech ON tech.id = t.assigned_technician_id
+      WHERE t.created_by = $1
+        AND t.status IN ('RESOLVED', 'NOT_RESOLVED')
+        AND t.assigned_technician_id IS NOT NULL
+        AND t.employee_rating IS NULL
+      ORDER BY COALESCE(t.resolved_at, t.updated_at) DESC NULLS LAST, t.ticket_number DESC
+      `,
+      [req.user.id]
+    );
+    return res.json({
+      tickets: rows.map((r) => ({
+        id: r.id,
+        ticketNumber: r.ticket_number,
+        subject: r.subject,
+        status: r.status,
+        resolvedAt: r.resolved_at,
+        createdAt: r.created_at,
+        technicianName: r.technician_name,
+        technicianId: r.technician_id,
+      })),
+    });
+  } catch (err) {
+    if (err.code === "42703") {
+      return res.json({ tickets: [] });
+    }
+    next(err);
+  }
+}
+
 async function getTicketDetails(req, res, next) {
   try {
     const ticketId = req.params.id;
@@ -308,6 +352,7 @@ async function getTicketDetails(req, res, next) {
           : null,
         employeeRating: ticket.employee_rating ?? null,
         employeeRatedAt: ticket.employee_rated_at ?? null,
+        employeeFeedback: ticket.employee_feedback ?? null,
       },
       replies: replyRows.map((r) => ({
         id: r.id,
@@ -500,12 +545,19 @@ async function updateStatus(req, res, next) {
 
 const rateSchema = z.object({
   rating: z.preprocess((v) => (v != null ? Number(v) : v), z.number().int().min(1).max(5)),
+  feedback: z.any().optional(),
 });
 
 async function rateTicket(req, res, next) {
   try {
     const ticketId = req.params.id;
-    const { rating } = rateSchema.parse(req.body);
+    const parsed = rateSchema.parse(req.body);
+    const { rating } = parsed;
+    const rawFb = parsed.feedback;
+    const feedback =
+      typeof rawFb === "string" && rawFb.trim().length > 0
+        ? rawFb.trim().slice(0, 2000)
+        : null;
 
     let rows;
     try {
@@ -536,16 +588,35 @@ async function rateTicket(req, res, next) {
 
     try {
       await pool.query(
-        "UPDATE tickets SET employee_rating=$1, employee_rated_at=now(), updated_at=now() WHERE id=$2",
-        [rating, ticketId]
+        `
+        UPDATE tickets
+        SET employee_rating=$1,
+            employee_rated_at=now(),
+            updated_at=now(),
+            employee_feedback=$3
+        WHERE id=$2
+        `,
+        [rating, ticketId, feedback]
       );
     } catch (dbErr) {
       if (dbErr.code === "42703") {
-        return res.status(503).json({
-          error: "Rating feature not set up. Run the database migration: node db/run-sql.js db/migrations/add_employee_rating.sql",
-        });
+        try {
+          await pool.query(
+            "UPDATE tickets SET employee_rating=$1, employee_rated_at=now(), updated_at=now() WHERE id=$2",
+            [rating, ticketId]
+          );
+        } catch (e2) {
+          if (e2.code === "42703") {
+            return res.status(503).json({
+              error:
+                "Rating feature not set up. Run: node db/run-sql.js db/migrations/add_employee_rating.sql",
+            });
+          }
+          throw e2;
+        }
+      } else {
+        throw dbErr;
       }
-      throw dbErr;
     }
 
     res.json({ ok: true });
@@ -656,6 +727,7 @@ async function takeTicket(req, res, next) {
 module.exports = {
   createTicket,
   listTickets,
+  listPendingRatings,
   getTicketDetails,
   addReply,
   updateStatus,

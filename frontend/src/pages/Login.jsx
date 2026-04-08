@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import PasswordField from "../components/PasswordField";
 
 export default function Login() {
   const { login } = useAuth();
@@ -61,21 +62,17 @@ export default function Login() {
                 autoComplete="email"
               />
             </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1.5">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-field"
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-              />
-            </div>
+            <PasswordField
+              id="password"
+              label="Password"
+              labelClassName="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1.5"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              autoComplete="current-password"
+              inputClassName="input-field w-full pr-11"
+            />
             <button type="submit" disabled={busy} className="btn-primary w-full py-3 mt-1 font-medium rounded-xl">
               {busy ? "Signing in..." : "Sign In"}
             </button>
