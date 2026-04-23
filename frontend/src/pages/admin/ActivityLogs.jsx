@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Loading from "../../components/Loading";
+import Pagination from "../../components/Pagination";
 import { listActivityLogs } from "../../services/admin";
 
 function formatActorRole(role) {
@@ -65,6 +66,8 @@ export default function ActivityLogs() {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     listActivityLogs(150)
@@ -72,6 +75,11 @@ export default function ActivityLogs() {
       .catch((e) => setError(e?.response?.data?.error || "Failed to load activity logs"))
       .finally(() => setLoading(false));
   }, []);
+
+  const total = rows.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
     <div className="space-y-4">
@@ -117,7 +125,7 @@ export default function ActivityLogs() {
                 </td>
               </tr>
             ) : rows.length ? (
-              rows.map((r) => (
+              pagedRows.map((r) => (
                 <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                     {new Date(r.createdAt).toLocaleString()}
@@ -146,6 +154,9 @@ export default function ActivityLogs() {
           </tbody>
         </table>
       </div>
+      {!loading && (
+        <Pagination page={safePage} pageSize={pageSize} total={total} onChange={setPage} />
+      )}
     </div>
   );
 }

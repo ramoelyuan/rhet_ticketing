@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Loading from "../../components/Loading";
 import PasswordField from "../../components/PasswordField";
+import Pagination from "../../components/Pagination";
 import {
   listEmployees,
   createEmployee,
@@ -14,6 +15,7 @@ export default function EmployeeManagement() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [msg, setMsg] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [fullName, setFullName] = useState("");
@@ -30,12 +32,25 @@ export default function EmployeeManagement() {
   const [editPassword, setEditPassword] = useState("");
   const [editConfirmPassword, setEditConfirmPassword] = useState("");
   const [editBusy, setEditBusy] = useState(false);
+  const pageSize = 10;
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((e) => (e.fullName || "").toLowerCase().includes(q));
   }, [rows, searchQuery]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  const total = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedRows = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, safePage]);
 
   async function load() {
     setLoading(true);
@@ -201,7 +216,7 @@ export default function EmployeeManagement() {
       ) : (
       <div className="card p-5">
         <ul className="space-y-2">
-          {filteredRows.map((e) => (
+          {pagedRows.map((e) => (
             <li
               key={e.id}
               className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border border-gray-200 dark:border-slate-700"
@@ -238,12 +253,15 @@ export default function EmployeeManagement() {
               </div>
             </li>
           ))}
-          {!filteredRows.length && (
+          {!pagedRows.length && (
             <p className="text-sm text-gray-500 dark:text-gray-400 py-4">
               {rows.length ? "No employees match your search." : "No employees."}
             </p>
           )}
         </ul>
+        <div className="mt-4">
+          <Pagination page={safePage} pageSize={pageSize} total={total} onChange={setPage} />
+        </div>
       </div>
       )}
       {editModalOpen &&

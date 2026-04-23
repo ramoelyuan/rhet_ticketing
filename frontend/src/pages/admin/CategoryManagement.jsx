@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Loading from "../../components/Loading";
+import Pagination from "../../components/Pagination";
 import { createCategory, listCategories, toggleCategory } from "../../services/admin";
 
 export default function CategoryManagement() {
@@ -10,6 +11,8 @@ export default function CategoryManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   async function load() {
     setLoading(true);
@@ -24,6 +27,11 @@ export default function CategoryManagement() {
   useEffect(() => {
     load().catch(() => setLoading(false));
   }, []);
+
+  const total = rows.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   function openModal() {
     setName("");
@@ -124,7 +132,7 @@ export default function CategoryManagement() {
       <div className="card p-5">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Categories</h2>
         <ul className="space-y-2">
-          {rows.map((c) => (
+          {pagedRows.map((c) => (
             <li
               key={c.id}
               className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border border-gray-200 dark:border-slate-700"
@@ -146,6 +154,9 @@ export default function CategoryManagement() {
             <p className="text-sm text-gray-500 dark:text-gray-400 py-4">No categories.</p>
           )}
         </ul>
+        <div className="mt-4">
+          <Pagination page={safePage} pageSize={pageSize} total={total} onChange={setPage} />
+        </div>
       </div>
       )}
     </div>
