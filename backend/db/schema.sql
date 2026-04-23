@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash text NOT NULL,
   role user_role NOT NULL DEFAULT 'EMPLOYEE',
   is_active boolean NOT NULL DEFAULT true,
+  department text NULL,
+  avatar_filename text NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

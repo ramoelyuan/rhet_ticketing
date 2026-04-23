@@ -231,6 +231,144 @@ async function toggleTechnicianAvailability(req, res, next) {
   }
 }
 
+const adminUpdateManagedUserSchema = z.object({
+  fullName: z.string().trim().min(2),
+  email: z.string().trim().email(),
+  password: z.union([z.string(), z.literal("")]).optional(),
+  department: z.union([z.string(), z.literal("")]).optional(),
+  isAvailable: z.boolean().optional(),
+});
+
+async function updateManagedUser(req, res, next) {
+  try {
+    const userId = req.params.id;
+    const parsed = adminUpdateManagedUserSchema.parse(req.body);
+    const emailLower = parsed.email.trim().toLowerCase();
+
+    const pwd = parsed.password?.trim();
+    if (pwd && pwd.length > 0 && pwd.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters." });
+    }
+
+    const { rows: ur } = await pool.query("SELECT id, role FROM users WHERE id=$1", [userId]);
+    const target = ur[0];
+    if (!target) return res.status(404).json({ error: "User not found" });
+    if (target.role !== "EMPLOYEE" && target.role !== "TECHNICIAN") {
+      return res.status(403).json({
+        error: "Only employees and IT support accounts can be edited from this screen.",
+      });
+    }
+
+    let empDept = null;
+    if (target.role === "EMPLOYEE") {
+      const dept = parsed.department?.trim();
+      if (!dept || !isValidDepartment(dept)) {
+        return res.status(400).json({
+          error: `Invalid department. Must be one of: ${DEPARTMENTS.join(", ")}`,
+        });
+      }
+      empDept = dept;
+    }
+
+    const passwordHash = pwd && pwd.length >= 6 ? await bcrypt.hash(pwd, 10) : null;
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      if (passwordHash) {
+        await client.query(
+          `UPDATE users SET full_name=$1, email=$2, password_hash=$3, updated_at=now() WHERE id=$4`,
+          [parsed.fullName.trim(), emailLower, passwordHash, userId]
+        );
+      } else {
+        await client.query(
+          `UPDATE users SET full_name=$1, email=$2, updated_at=now() WHERE id=$3`,
+          [parsed.fullName.trim(), emailLower, userId]
+        );
+      }
+
+      if (target.role === "EMPLOYEE" && empDept) {
+        try {
+          await client.query(`UPDATE users SET department=$1 WHERE id=$2`, [empDept, userId]);
+        } catch (e) {
+          if (e.code !== "42703") throw e;
+        }
+      }
+
+      if (target.role === "TECHNICIAN" && typeof parsed.isAvailable === "boolean") {
+        await client.query(`UPDATE technicians SET is_available=$1 WHERE user_id=$2`, [
+          parsed.isAvailable,
+          userId,
+        ]);
+      }
+
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    await addActivityLog({
+      actorUserId: req.user.id,
+      actorName: req.user.fullName,
+      actorRole: req.user.role,
+      action: "ADMIN_USER_UPDATED",
+      meta: { targetUserId: userId, role: target.role },
+    });
+
+    if (target.role === "EMPLOYEE") {
+      const { rows } = await pool.query(
+        `SELECT id, full_name, email, is_active, created_at, department FROM users WHERE id=$1`,
+        [userId]
+      );
+      const e = rows[0];
+      return res.json({
+        user: {
+          id: e.id,
+          fullName: e.full_name,
+          email: e.email,
+          isActive: e.is_active,
+          createdAt: e.created_at,
+          department: e.department,
+        },
+      });
+    }
+
+    const { rows } = await pool.query(
+      `
+      SELECT u.id, u.full_name, u.email, u.is_active, tech.is_available
+      FROM users u
+      JOIN technicians tech ON tech.user_id = u.id
+      WHERE u.id=$1
+      `,
+      [userId]
+    );
+    const t = rows[0];
+    return res.json({
+      user: {
+        id: t.id,
+        fullName: t.full_name,
+        email: t.email,
+        isActive: t.is_active,
+        isAvailable: t.is_available,
+      },
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      const first = err.issues[0];
+      const message = first ? `${first.path.join(".")}: ${first.message}` : "Invalid request";
+      return res.status(400).json({ error: message, details: err.issues });
+    }
+    if (err.code === "23505") {
+      return res.status(409).json({ error: "An account with this email already exists." });
+    }
+    next(err);
+  }
+}
+
 async function toggleUserActive(req, res, next) {
   try {
     const id = req.params.id;
@@ -557,6 +695,7 @@ module.exports = {
   listTechnicians,
   createTechnician,
   toggleTechnicianAvailability,
+  updateManagedUser,
   toggleUserActive,
   assignTicket,
   adminDashboard,

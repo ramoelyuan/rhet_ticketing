@@ -2,7 +2,12 @@ import React, { useMemo, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Loading from "../../components/Loading";
 import PasswordField from "../../components/PasswordField";
-import { listEmployees, createEmployee, toggleUserActive } from "../../services/admin";
+import {
+  listEmployees,
+  createEmployee,
+  toggleUserActive,
+  updateManagedUser,
+} from "../../services/admin";
 import { DEPARTMENTS } from "../../constants/departments";
 
 export default function EmployeeManagement() {
@@ -17,6 +22,14 @@ export default function EmployeeManagement() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [department, setDepartment] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editRow, setEditRow] = useState(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editDepartment, setEditDepartment] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [editConfirmPassword, setEditConfirmPassword] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -92,6 +105,66 @@ export default function EmployeeManagement() {
     }
   }
 
+  function openEditModal(row) {
+    setEditRow(row);
+    setEditFullName(row.fullName || "");
+    setEditEmail(row.email || "");
+    setEditDepartment(row.department || "");
+    setEditPassword("");
+    setEditConfirmPassword("");
+    setMsg(null);
+    setEditModalOpen(true);
+  }
+
+  async function onEditSubmit(e) {
+    e.preventDefault();
+    setMsg(null);
+    if (!editRow) return;
+    const trimmedName = editFullName.trim();
+    const trimmedEmail = editEmail.trim().toLowerCase();
+    if (trimmedName.length < 2) {
+      setMsg({ type: "error", text: "Full name must be at least 2 characters." });
+      return;
+    }
+    if (!trimmedEmail) {
+      setMsg({ type: "error", text: "Email is required." });
+      return;
+    }
+    if (!editDepartment) {
+      setMsg({ type: "error", text: "Please select a department." });
+      return;
+    }
+    if (editPassword || editConfirmPassword) {
+      if (editPassword.length < 6) {
+        setMsg({ type: "error", text: "New password must be at least 6 characters." });
+        return;
+      }
+      if (editPassword !== editConfirmPassword) {
+        setMsg({ type: "error", text: "Passwords do not match." });
+        return;
+      }
+    }
+    setEditBusy(true);
+    try {
+      const body = {
+        fullName: trimmedName,
+        email: trimmedEmail,
+        department: editDepartment,
+      };
+      if (editPassword) body.password = editPassword;
+      await updateManagedUser(editRow.id, body);
+      setMsg({ type: "success", text: "Employee updated." });
+      setEditModalOpen(false);
+      setEditRow(null);
+      await load();
+    } catch (err) {
+      const data = err?.response?.data;
+      setMsg({ type: "error", text: data?.error || "Failed to update employee." });
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -143,7 +216,14 @@ export default function EmployeeManagement() {
                   Active: {e.isActive ? "Yes" : "No"}
                 </p>
               </div>
-              <div>
+              <div className="flex flex-wrap gap-2 items-center shrink-0">
+                <button
+                  type="button"
+                  onClick={() => openEditModal(e)}
+                  className="text-sm py-1.5 px-3 rounded-lg font-medium bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600"
+                >
+                  Edit
+                </button>
                 <button
                   type="button"
                   onClick={() => toggleUserActive(e.id, !e.isActive).then(() => load()).catch(() => {})}
@@ -166,6 +246,107 @@ export default function EmployeeManagement() {
         </ul>
       </div>
       )}
+      {editModalOpen &&
+        createPortal(
+          <>
+            <div
+              className="bg-black/40 backdrop-blur-sm"
+              style={{ position: "absolute", inset: 0, zIndex: 1 }}
+              onClick={() => !editBusy && setEditModalOpen(false)}
+              aria-hidden
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-employee-title"
+              className="rounded-lg bg-white dark:bg-slate-800 p-5 shadow-xl border border-indigo-100 dark:border-slate-700 w-full max-w-md"
+              style={{ position: "relative", zIndex: 2, pointerEvents: "auto" }}
+              onClick={(ev) => ev.stopPropagation()}
+            >
+              <h2 id="edit-employee-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Edit employee
+              </h2>
+              <form onSubmit={onEditSubmit} className="space-y-3" autoComplete="off">
+                <div>
+                  <label htmlFor="edit-emp-fullname" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Full name (min 2 characters)
+                  </label>
+                  <input
+                    id="edit-emp-fullname"
+                    type="text"
+                    value={editFullName}
+                    onChange={(ev) => setEditFullName(ev.target.value)}
+                    className="input-field w-full"
+                    minLength={2}
+                    required
+                    autoComplete="off"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-emp-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Email
+                  </label>
+                  <input
+                    id="edit-emp-email"
+                    type="email"
+                    value={editEmail}
+                    onChange={(ev) => setEditEmail(ev.target.value)}
+                    className="input-field w-full"
+                    required
+                    autoComplete="off"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-emp-department" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Department
+                  </label>
+                  <select
+                    id="edit-emp-department"
+                    value={editDepartment}
+                    onChange={(ev) => setEditDepartment(ev.target.value)}
+                    className="input-field w-full"
+                    required
+                  >
+                    <option value="">Select department…</option>
+                    {DEPARTMENTS.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <PasswordField
+                  id="edit-emp-password"
+                  label="New password (optional, min 6 characters)"
+                  value={editPassword}
+                  onChange={(ev) => setEditPassword(ev.target.value)}
+                  autoComplete="new-password"
+                />
+                <PasswordField
+                  id="edit-emp-password-confirm"
+                  label="Confirm new password"
+                  value={editConfirmPassword}
+                  onChange={(ev) => setEditConfirmPassword(ev.target.value)}
+                  autoComplete="new-password"
+                />
+                <div className="flex gap-2 pt-2">
+                  <button type="submit" disabled={editBusy} className="btn-primary flex-1">
+                    {editBusy ? "Saving..." : "Save changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => !editBusy && setEditModalOpen(false)}
+                    disabled={editBusy}
+                    className="btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </>,
+          document.getElementById("modal-root") || document.body
+        )}
       {modalOpen &&
         createPortal(
           <>

@@ -16,7 +16,12 @@ const certificateRoutes = require("./routes/certificateRoutes");
 
 const app = express();
 
-app.use(helmet());
+app.use(
+  helmet({
+    // Allow avatars/static /uploads to load in <img> when SPA is on another origin (default is same-origin).
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json({ limit: "2mb" }));

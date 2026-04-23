@@ -12,6 +12,7 @@ const {
   createTechnician,
   toggleTechnicianAvailability,
   toggleUserActive,
+  updateManagedUser,
   assignTicket,
   adminDashboard,
   reportTicketsPerTechnician,
@@ -40,6 +41,7 @@ router.post("/employees", createEmployee);
 router.get("/technicians", listTechnicians);
 router.post("/technicians", createTechnician);
 router.patch("/technicians/:id/toggle-availability", toggleTechnicianAvailability);
+router.patch("/users/:id", updateManagedUser);
 router.patch("/users/:id/toggle-active", toggleUserActive);
 
 router.post("/tickets/:id/assign", assignTicket);

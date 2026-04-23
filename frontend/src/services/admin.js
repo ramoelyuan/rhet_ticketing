@@ -37,6 +37,10 @@ export async function toggleTechAvailability(id) {
   return await apiPatch(`/api/admin/technicians/${id}/toggle-availability`, {});
 }
 
+export async function updateManagedUser(id, body) {
+  return await apiPatch(`/api/admin/users/${id}`, body);
+}
+
 export async function toggleUserActive(id) {
   return await apiPatch(`/api/admin/users/${id}/toggle-active`, {});
 }
