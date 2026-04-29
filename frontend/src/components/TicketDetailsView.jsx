@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
 import { getTicket, addReply, updateStatus, takeTicket, rateTicket } from "../services/tickets";
+import { listCategories } from "../services/categories";
 import { PriorityChip, StatusChip } from "./TicketChips";
 import TicketTimeline from "./TicketTimeline";
 import Loading from "./Loading";
@@ -23,6 +25,10 @@ export default function TicketDetailsView() {
   const [rateBusy, setRateBusy] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(null);
   const [rateFeedback, setRateFeedback] = useState("");
+  const [resolveModalOpen, setResolveModalOpen] = useState(false);
+  const [resolveCategoryId, setResolveCategoryId] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [resolveBusy, setResolveBusy] = useState(false);
 
   async function load() {
     const res = await getTicket(id);
@@ -46,6 +52,14 @@ export default function TicketDetailsView() {
       .catch(() => setTechs([]));
   }, [user?.role]);
 
+  useEffect(() => {
+    const staff = user?.role === "TECHNICIAN" || user?.role === "ADMIN";
+    if (!staff || !data) return;
+    listCategories()
+      .then((r) => setCategories(r.categories || []))
+      .catch(() => setCategories([]));
+  }, [user?.role, data]);
+
   async function submitReply() {
     setError(null);
     try {
@@ -59,18 +73,41 @@ export default function TicketDetailsView() {
   }
 
   async function submitStatus() {
+    if (status === "RESOLVED") {
+      const ticket = data?.ticket;
+      setResolveCategoryId(ticket?.categoryId ? String(ticket.categoryId) : "");
+      setResolveModalOpen(true);
+      return;
+    }
     const statusLabel = { OPEN: "Open", IN_PROGRESS: "In Progress", RESOLVED: "Resolved", NOT_RESOLVED: "Not Resolved" }[status];
     const msg =
-      status === "RESOLVED" || status === "NOT_RESOLVED"
-        ? (status === "RESOLVED" ? "Mark as Resolved?" : "Mark as Not Resolved?") + " Once set, the ticket cannot be edited."
+      status === "NOT_RESOLVED"
+        ? "Mark as Not Resolved? Once set, the ticket cannot be edited."
         : `Change status to "${statusLabel}"?`;
     if (!window.confirm(msg)) return;
     setError(null);
     try {
-      await updateStatus(id, status);
+      await updateStatus(id, { status });
       await load();
     } catch (e) {
       setError(e?.response?.data?.error || "Failed to update status");
+    }
+  }
+
+  async function confirmResolve() {
+    setError(null);
+    setResolveBusy(true);
+    try {
+      await updateStatus(id, {
+        status: "RESOLVED",
+        categoryId: resolveCategoryId ? resolveCategoryId : null,
+      });
+      setResolveModalOpen(false);
+      await load();
+    } catch (e) {
+      setError(e?.response?.data?.error || "Failed to update status");
+    } finally {
+      setResolveBusy(false);
     }
   }
 
@@ -342,6 +379,62 @@ export default function TicketDetailsView() {
               )}
             </div>
           )}
+          {resolveModalOpen &&
+            createPortal(
+              <>
+                <div
+                  className="bg-black/40 backdrop-blur-sm"
+                  style={{ position: "fixed", inset: 0, zIndex: 40 }}
+                  onClick={() => !resolveBusy && setResolveModalOpen(false)}
+                  aria-hidden
+                />
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="resolve-modal-title"
+                  className="rounded-lg bg-white dark:bg-slate-800 p-5 shadow-xl border border-indigo-100 dark:border-slate-700 w-full max-w-md"
+                  style={{ position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)", zIndex: 50 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h2 id="resolve-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Resolve this ticket?
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Confirm the category is correct. You can change it below before marking this ticket as resolved.
+                  </p>
+                  <label htmlFor="resolve-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Category
+                  </label>
+                  <select
+                    id="resolve-category"
+                    value={resolveCategoryId}
+                    onChange={(e) => setResolveCategoryId(e.target.value)}
+                    className="input-field w-full mb-4"
+                  >
+                    <option value="">Uncategorized</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      disabled={resolveBusy}
+                      onClick={() => !resolveBusy && setResolveModalOpen(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button type="button" disabled={resolveBusy} onClick={confirmResolve} className="btn-primary">
+                      {resolveBusy ? "Saving…" : "Confirm resolved"}
+                    </button>
+                  </div>
+                </div>
+              </>,
+              document.getElementById("modal-root") || document.body
+            )}
           {canStaff && (
             <div className="card p-5">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Status</h2>

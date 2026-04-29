@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import PasswordField from "../components/PasswordField";
+import {
+  clearLoginLock,
+  getLoginLockState,
+  recordFailedAttempt,
+  remainingLockSeconds,
+} from "../utils/loginRateLimit";
 
 export default function Login() {
   const { login } = useAuth();
@@ -10,18 +16,44 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [tick, setTick] = useState(0);
+
+  const lockState = useMemo(() => getLoginLockState(email), [email, tick]);
+  const lockSeconds = lockState.locked ? remainingLockSeconds(lockState.until) : 0;
+
+  useEffect(() => {
+    if (!lockState.locked) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [lockState.locked, email]);
 
   async function onSubmit(e) {
     e.preventDefault();
     setError(null);
+    const lockedNow = getLoginLockState(email);
+    if (lockedNow.locked) {
+      setError(
+        `Too many failed attempts. Try again in ${remainingLockSeconds(lockedNow.until)} seconds.`
+      );
+      return;
+    }
     setBusy(true);
     try {
       const user = await login(email, password);
+      clearLoginLock(email);
       if (user.role === "EMPLOYEE") nav("/employee", { replace: true });
       else if (user.role === "TECHNICIAN") nav("/technician", { replace: true });
       else nav("/admin", { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.error || "Login failed");
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.error || "Login failed";
+      if (status === 401) {
+        const after = recordFailedAttempt(email);
+        setTick((t) => t + 1);
+        if (!after.locked) setError(msg);
+      } else {
+        setError(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -41,6 +73,15 @@ export default function Login() {
             Sign in to your account
           </h2>
           <form onSubmit={onSubmit} className="space-y-5">
+            {lockState.locked && (
+              <div
+                className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-3 py-2.5 text-sm text-amber-900 dark:text-amber-200"
+                role="status"
+              >
+                Too many failed attempts for this email. Try again in{" "}
+                <span className="font-semibold tabular-nums">{lockSeconds}</span> seconds.
+              </div>
+            )}
             {error && (
               <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2.5 text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
                 <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden />
@@ -60,6 +101,7 @@ export default function Login() {
                 placeholder="you@company.com"
                 required
                 autoComplete="email"
+                disabled={lockState.locked}
               />
             </div>
             <PasswordField
@@ -72,9 +114,14 @@ export default function Login() {
               required
               autoComplete="current-password"
               inputClassName="input-field w-full pr-11"
+              disabled={lockState.locked}
             />
-            <button type="submit" disabled={busy} className="btn-primary w-full py-3 mt-1 font-medium rounded-xl">
-              {busy ? "Signing in..." : "Sign In"}
+            <button
+              type="submit"
+              disabled={busy || lockState.locked}
+              className="btn-primary w-full py-3 mt-1 font-medium rounded-xl disabled:opacity-60"
+            >
+              {busy ? "Signing in..." : lockState.locked ? `Wait ${lockSeconds}s` : "Sign In"}
             </button>
           </form>
         </div>

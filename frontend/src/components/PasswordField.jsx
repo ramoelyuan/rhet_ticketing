@@ -44,10 +44,11 @@ export default function PasswordField({
         />
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-gray-500 hover:bg-black/5 dark:text-gray-400 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-gray-500 hover:bg-black/5 dark:text-gray-400 dark:hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary-500/40 disabled:opacity-40 disabled:pointer-events-none"
           onClick={() => setShow((v) => !v)}
           aria-label={show ? "Hide password" : "Show password"}
-          tabIndex={0}
+          tabIndex={disabled ? -1 : 0}
+          disabled={disabled}
         >
           {show ? <EyeSlashIcon className="w-5 h-5" aria-hidden /> : <EyeIcon className="w-5 h-5" aria-hidden />}
         </button>

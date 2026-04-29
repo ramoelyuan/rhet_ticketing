@@ -16,8 +16,9 @@ export async function addReply(id, body) {
   return await apiPost(`/api/tickets/${id}/replies`, body);
 }
 
-export async function updateStatus(id, status) {
-  return await apiPost(`/api/tickets/${id}/status`, { status });
+export async function updateStatus(id, statusOrBody) {
+  const body = typeof statusOrBody === "string" ? { status: statusOrBody } : statusOrBody;
+  return await apiPost(`/api/tickets/${id}/status`, body);
 }
 
 export async function listPendingRatings() {

@@ -346,6 +346,7 @@ async function getTicketDetails(req, res, next) {
         resolvedAt: ticket.resolved_at,
         closedAt: ticket.closed_at,
         category: ticket.category_name,
+        categoryId: ticket.category_id ?? null,
         createdBy: { id: ticket.created_by, name: ticket.created_by_name },
         assignedTechnician: ticket.assigned_technician_id
           ? { id: ticket.assigned_technician_id, name: ticket.technician_name }
@@ -470,15 +471,17 @@ async function addReply(req, res, next) {
 
 const statusSchema = z.object({
   status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "NOT_RESOLVED"]),
+  categoryId: z.union([z.string().uuid(), z.null()]).optional(),
 });
 
 async function updateStatus(req, res, next) {
   try {
     const ticketId = req.params.id;
-    const { status } = statusSchema.parse(req.body);
+    const parsed = statusSchema.parse(req.body);
+    const { status, categoryId } = parsed;
 
     const { rows } = await pool.query(
-      "SELECT id, status, created_by, assigned_technician_id FROM tickets WHERE id=$1",
+      "SELECT id, status, created_by, assigned_technician_id, category_id FROM tickets WHERE id=$1",
       [ticketId]
     );
     const ticket = rows[0];
@@ -500,6 +503,20 @@ async function updateStatus(req, res, next) {
         return res.status(400).json({ error: "IT Support can only set status to Resolved or Not Resolved." });
     }
 
+    let nextCategoryId = ticket.category_id;
+    if (categoryId !== undefined) {
+      if (categoryId !== null) {
+        const { rows: catRows } = await pool.query(
+          "SELECT id FROM categories WHERE id=$1 AND is_active=true",
+          [categoryId]
+        );
+        if (!catRows[0]) return res.status(400).json({ error: "Invalid or inactive category." });
+        nextCategoryId = categoryId;
+      } else {
+        nextCategoryId = null;
+      }
+    }
+
     const resolvedAt = status === "RESOLVED" ? new Date() : null;
 
     await pool.query(
@@ -507,10 +524,11 @@ async function updateStatus(req, res, next) {
       UPDATE tickets
       SET status=$1,
           resolved_at = COALESCE($2, resolved_at),
+          category_id=$3,
           updated_at = now()
-      WHERE id=$3
+      WHERE id=$4
       `,
-      [status, resolvedAt, ticketId]
+      [status, resolvedAt, nextCategoryId, ticketId]
     );
 
     const eventType =
